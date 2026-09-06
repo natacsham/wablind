@@ -2,7 +2,7 @@
 
 Este arquivo separa testes executáveis, inspeções e validação humana.
 
-Execução local de 6 de setembro de 2026: testes de tipos aprovados; testes unitários/API/PostgreSQL em memória aprovados; 10 testes de navegador aprovados sobre o build de produção. axe sem violações nos critérios automatizáveis examinados (WCAG A/AA selecionados); reflow testado a 320 CSS px. Auditoria de dependências de produção sem vulnerabilidades conhecidas no momento da execução. Capturas visuais locais em `test-results/` (não versionadas).
+Execução local de 6 de setembro de 2026: testes de tipos aprovados; 42 testes unitários/API/PostgreSQL em memória aprovados; 11 testes de navegador aprovados sobre o build de produção. axe sem violações nos critérios automatizáveis examinados (WCAG A/AA selecionados); reflow testado a 320 CSS px. Auditoria de dependências de produção sem vulnerabilidades conhecidas no momento da execução. Capturas visuais locais em `test-results/` (não versionadas).
 
 A primeira rodada de navegador contra o servidor de desenvolvimento apresentou timeouts de carregamento. A suíte foi direcionada ao artefato de produção, conforme o requisito de entrega, e passou integralmente. Não se apresentam essas falhas como problemas de acessibilidade resolvidos por automação.
 

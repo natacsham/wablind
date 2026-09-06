@@ -18,6 +18,13 @@ export default function Editor({ workspace: w, update, announce }: { workspace: 
   const [memberEmail, setMemberEmail] = useState('');
   const [members, setMembers] = useState<{ user_id: string }[]>([]);
   const [rights, setRights] = useState(false);
+  const draftKey = `wablind.form-drafts.${doc.id}`;
+  const drafts = useRef<Record<string, { description: string; note: string }>>({});
+  const loadedDrafts = useRef(false);
+  if (!loadedDrafts.current) {
+    try { const recovered = JSON.parse(sessionStorage.getItem(draftKey) || '{}'); drafts.current = recovered && typeof recovered === 'object' && !Array.isArray(recovered) ? recovered : {}; } catch { drafts.current = {}; }
+    loadedDrafts.current = true;
+  }
   const heading = useRef<HTMLHeadingElement>(null);
   const block = doc.blocks.find(b => b.id === selected) || doc.blocks[0];
   const existing = doc.annotations.find(a => a.elementId === block.id && a.category === category);
@@ -25,7 +32,12 @@ export default function Editor({ workspace: w, update, announce }: { workspace: 
   const issues = inspectDocument(doc);
   useEffect(() => { supabase?.auth.getUser().then(({ data }) => setUserId(data.user?.id)); }, []);
   useEffect(() => { if (w.remoteId) request<{ members: { user_id: string }[] }>(`/projects/${w.remoteId}`).then(data => setMembers(data.members)).catch(() => {}); }, [w.remoteId]);
-  useEffect(() => { setDescription(existing?.description || ''); setNote(existing?.note || ''); }, [selected, category, existing?.id, existing?.updatedAt]);
+  useEffect(() => { const draft = drafts.current[`${selected}:${category}`]; setDescription(typeof draft?.description === 'string' ? draft.description : existing?.description || ''); setNote(typeof draft?.note === 'string' ? draft.note : existing?.note || ''); }, [selected, category, existing?.id, existing?.updatedAt]);
+  function storeDraft(nextDescription: string, nextNote: string) {
+    setDescription(nextDescription); setNote(nextNote);
+    drafts.current[`${selected}:${category}`] = { description: nextDescription, note: nextNote };
+    try { sessionStorage.setItem(draftKey, JSON.stringify(drafts.current)); } catch { setError('Não foi possível guardar o texto provisório. Aplique a marcação antes de sair deste trecho.'); }
+  }
   function choose(id: string, focus = false) {
     const next = doc.blocks.find(b => b.id === id)!;
     setSelected(id); setCategory(next.kind === 'image' ? 'description' : next.kind === 'table' ? 'table' : next.kind === 'list' ? 'list' : 'main');
@@ -37,6 +49,8 @@ export default function Editor({ workspace: w, update, announce }: { workspace: 
     e.preventDefault();
     if (!description.trim()) { setError('Escreva uma descrição antes de aplicar a marcação.'); return; }
     const annotation: Annotation = { id: existing?.id || crypto.randomUUID(), elementId: block.id, category, description: description.trim(), note: note.trim(), author: userId || 'Mediação local', updatedAt: new Date().toISOString() };
+    delete drafts.current[`${selected}:${category}`];
+    try { sessionStorage.setItem(draftKey, JSON.stringify(drafts.current)); } catch { /* Document persistence remains available through the export controls. */ }
     change({ ...w, document: { ...doc, annotations: [...doc.annotations.filter(a => a.id !== annotation.id), annotation] } });
     setError(''); announce('Marcação aplicada ao rascunho. Salve uma revisão para concluir.');
   }
@@ -83,8 +97,8 @@ export default function Editor({ workspace: w, update, announce }: { workspace: 
       <aside className="marker-panel"><p className="eyebrow">CONTEXTO HUMANO</p><h2 ref={heading} tabIndex={-1}>Adicionar marcação</h2><p className="selected-summary">Selecionado: {kindLabels[block.kind].toLowerCase()} · {blockText(block).slice(0, 100)}</p><form onSubmit={apply}>
         <label htmlFor="category">Tipo de marcador</label><select id="category" value={category} onChange={e => setCategory(e.target.value as Category)}>{Object.entries(categories).filter(([key]) => canAnnotate(block, key as Category)).map(([key, value]) => <option value={key} key={key}>{value.label}</option>)}</select>
         <p className="field-help" id="marker-help">{categories[category].help} {categories[category].example}</p>
-        <label htmlFor="description">Descrição <span className="muted">(obrigatória)</span></label><textarea id="description" rows={5} maxLength={4000} required value={description} aria-describedby="marker-help" onChange={e => setDescription(e.target.value)} />
-        <label htmlFor="pedagogy">Finalidade pedagógica <span className="muted">(opcional)</span></label><textarea id="pedagogy" rows={3} maxLength={2000} value={note} onChange={e => setNote(e.target.value)} />
+        <label htmlFor="description">Descrição <span className="muted">(obrigatória)</span></label><textarea id="description" rows={5} maxLength={4000} required value={description} aria-describedby="marker-help" onChange={e => storeDraft(e.target.value, note)} />
+        <label htmlFor="pedagogy">Finalidade pedagógica <span className="muted">(opcional)</span></label><textarea id="pedagogy" rows={3} maxLength={2000} value={note} onChange={e => storeDraft(description, e.target.value)} />
         <div className="marker-preview"><span className="small">PRÉVIA DO MARCADOR</span><strong>{categories[category].label}</strong><p>{description || 'Sua descrição aparecerá junto ao trecho na leitura.'}</p></div>
         <button className="primary full" type="submit">{existing ? 'Atualizar marcação' : 'Aplicar ao trecho'}</button>
       </form>{existing && <button className="danger text-button" onClick={() => { change({ ...w, document: { ...doc, annotations: doc.annotations.filter(a => a.id !== existing.id) } }); setDescription(''); setNote(''); announce('Marcação removida. Você pode desfazer.'); }}>Remover esta marcação</button>}</aside>

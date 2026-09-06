@@ -36,6 +36,9 @@ export default function App() {
     return () => { active = false; };
   }, [route, retry]);
   function persist(w: Workspace) {
+    if (!w.revisions.length && !w.document.annotations.length && library[w.document.id]) {
+      try { sessionStorage.removeItem(`wablind.form-drafts.${w.document.id}`); } catch { /* Export remains available when browser storage is restricted. */ }
+    }
     const next = { ...library, [w.document.id]: w }; setLibrary(next);
     if (initial.error) return;
     try { writeLibrary(next); setStorageError(''); } catch { setStorageError('Não foi possível gravar neste navegador. Mantenha a página aberta e exporte o JSON do seu trabalho.'); }

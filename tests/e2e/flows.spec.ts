@@ -36,6 +36,15 @@ test('undo, removal and restoration preserve revisions', async ({ page }) => {
   await page.getByRole('button', { name: 'Restaurar revisão 1' }).click();
   await expect(page.getByLabel('Descrição (obrigatória)')).toHaveValue('Texto principal.');
 });
+test('keeps unapplied descriptions when changing elements and reloading', async ({ page }) => {
+  await page.goto('./'); await page.getByRole('button', { name: 'Explorar: Uma viagem com a água' }).click();
+  await page.getByLabel('Descrição (obrigatória)').fill('Texto ainda não aplicado.');
+  await page.getByRole('button', { name: /02.*Imagem/ }).click();
+  await page.getByRole('button', { name: /01.*Parágrafo/ }).click();
+  await expect(page.getByLabel('Descrição (obrigatória)')).toHaveValue('Texto ainda não aplicado.');
+  await page.reload();
+  await expect(page.getByLabel('Descrição (obrigatória)')).toHaveValue('Texto ainda não aplicado.');
+});
 test('keyboard can enter editor and apply a marker', async ({ page }) => {
   await page.goto('./'); await page.keyboard.press('Tab'); await expect(page.getByRole('link', { name: 'Ir para o conteúdo principal' })).toBeFocused(); await page.keyboard.press('Enter');
   const start = page.getByRole('button', { name: 'Explorar: Pequenas descobertas na horta' }); await start.focus(); await page.keyboard.press('Enter');
