@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: wablind-api
+    runtime: node
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm typecheck && pnpm exec tsup server/index.ts --format esm --platform node --target node24 --out-dir dist-server
+    startCommand: node dist-server/index.js
+    healthCheckPath: /health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: https://natacsham.github.io
+      - key: ALLOWED_CAPTURE_HOSTS
+        sync: false

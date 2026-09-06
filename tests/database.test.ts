@@ -1,0 +1,74 @@
+import { PGlite } from '@electric-sql/pglite';
+import { beforeAll, afterAll, it, expect } from 'vitest';
+import { readFile } from 'node:fs/promises';
+import { examples } from '../shared/examples';
+let db: PGlite;
+const alice = '00000000-0000-4000-8000-000000000001';
+const bob = '00000000-0000-4000-8000-000000000002';
+let project: string;
+async function asUser(id: string | null, role = 'authenticated') {
+  await db.exec('reset role');
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [id || '']);
+  await db.exec(`set role ${role}`);
+}
+beforeAll(async () => {
+  db = new PGlite();
+  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
+    create schema auth; create schema storage;
+    create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);
+    create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+    grant usage on schema auth to authenticated,anon; grant execute on function auth.uid() to authenticated,anon;
+    create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+    create table storage.objects(id uuid,name text,bucket_id text); alter table storage.objects enable row level security;
+    create function storage.foldername(text) returns text[] language sql as $$ select string_to_array($1,'/') $$;
+    insert into auth.users values ('${alice}','alice@example.test',now()),('${bob}','bob@example.test',now());`);
+  await db.exec(await readFile(new URL('../supabase/migrations/202609060001_wablind.sql', import.meta.url), 'utf8'));
+}, 60000);
+afterAll(async () => { await db?.close(); });
+it('isolates projects, controls invitations, locks revisions and publication', async () => {
+  await asUser(alice);
+  const created = await db.query<{ result: { id: string } }>('select public.wablind_create_project($1::jsonb) as result', [JSON.stringify(examples[1].document)]);
+  project = created.rows[0].result.id;
+  expect((await db.query('select * from public.wablind_projects')).rows).toHaveLength(1);
+  await asUser(bob);
+  expect((await db.query('select * from public.wablind_projects')).rows).toHaveLength(0);
+  expect((await db.query('select * from public.wablind_revisions')).rows).toHaveLength(0);
+  await expect(db.query('select public.wablind_save_revision($1,$2::jsonb,1)', [project, JSON.stringify(examples[1].document)])).rejects.toThrow('FORBIDDEN');
+  await expect(db.query('select public.wablind_publish($1,1)', [project])).rejects.toThrow('FORBIDDEN');
+  await asUser(alice);
+  await db.query('select public.wablind_add_member($1,$2)', [project, 'bob@example.test']);
+  await db.query('select public.wablind_publish($1,1)', [project]);
+  await asUser(bob);
+  const edited = structuredClone(examples[1].document);
+  edited.annotations = [{ id: 'marker', elementId: 'garden-intro', category: 'main', description: 'Revisão privada', note: '', author: 'forged', updatedAt: new Date().toISOString() }];
+  await db.query('select public.wablind_save_revision($1,$2::jsonb,1)', [project, JSON.stringify(edited)]);
+  await expect(db.query('select public.wablind_save_revision($1,$2::jsonb,1)', [project, JSON.stringify(edited)])).rejects.toThrow('CONFLICT');
+  await expect(db.query('update public.wablind_projects set version=99 where id=$1', [project])).rejects.toThrow('permission denied');
+  await asUser(null, 'anon');
+  const pub = await db.query<{ result: { annotations: unknown[] } }>('select public.wablind_publication($1) as result', [project]);
+  expect(pub.rows[0].result.annotations).toHaveLength(0);
+  await expect(db.query('select * from public.wablind_revisions')).rejects.toThrow('permission denied');
+  await asUser(alice);
+  await db.query('select public.wablind_publish($1,2)', [project]);
+  const published = await db.query<{ result: { annotations: { author: string }[] } }>('select public.wablind_publication($1) as result', [project]);
+  expect(published.rows[0].result.annotations[0].author).toBe('Mediação WABlind');
+  await db.query('select public.wablind_unpublish($1)', [project]);
+  await asUser(null, 'anon');
+  await expect(db.query('select public.wablind_publication($1)', [project])).rejects.toThrow('NOT_FOUND');
+}, 30000);
+it('prevents source rebinding and enforces the daily capture quota', async () => {
+  await asUser(alice);
+  const edited = structuredClone(examples[1].document); edited.source.hash = 'changed';
+  await expect(db.query('select public.wablind_save_revision($1,$2::jsonb,2)', [project, JSON.stringify(edited)])).rejects.toThrow('INVALID_DOCUMENT');
+  for (let i = 0; i < 20; i++) await db.query('select public.wablind_capture_quota()');
+  await expect(db.query('select public.wablind_capture_quota()')).rejects.toThrow('quota');
+});
+it('blocks publication of undescribed images and revokes editing', async () => {
+  await asUser(alice);
+  const created = await db.query<{ result: { id: string } }>('select public.wablind_create_project($1::jsonb) as result', [JSON.stringify(examples[0].document)]);
+  await expect(db.query('select public.wablind_publish($1,1)', [created.rows[0].result.id])).rejects.toThrow('missing image description');
+  await db.query('select public.wablind_remove_member($1,$2)', [project,bob]);
+  await asUser(bob);
+  expect((await db.query('select * from public.wablind_projects')).rows).toHaveLength(0);
+  await expect(db.query('select public.wablind_save_revision($1,$2::jsonb,2)', [project,JSON.stringify(examples[1].document)])).rejects.toThrow('FORBIDDEN');
+});

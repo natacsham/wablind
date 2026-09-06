@@ -1,0 +1,27 @@
+name: Barreira de acessibilidade
+description: Relatar um problema de acesso ou operação sem compartilhar dados privados.
+title: '[Acessibilidade] '
+body:
+  - type: markdown
+    attributes:
+      value: Não inclua dados pessoais, credenciais ou documentos privados. Informe apenas o necessário para reproduzir a barreira.
+  - type: input
+    id: flow
+    attributes:
+      label: Página e tarefa
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: O que aconteceu e o que você esperava
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Navegador e tecnologia assistiva, se utilizada
+  - type: textarea
+    id: steps
+    attributes:
+      label: Passos para reproduzir
