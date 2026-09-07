@@ -6,6 +6,7 @@ import { load } from 'cheerio';
 import type { AnyNode, Element } from 'domhandler';
 import { documentSchema, safeHref, type Inline, type Block, type ReadingDocument } from '../shared/model';
 import { HttpError } from './errors';
+import { sanitizePreview, type SourcePreview } from './preview';
 
 const MAX_HTML = 2 * 1024 * 1024;
 export function publicAddress(address: string) {
@@ -46,15 +47,16 @@ async function fetchResource(raw: string, hosts: string[], signal: AbortSignal, 
   return resource.location ? fetchResource(resource.location, hosts, signal, maxBytes, redirects + 1) : resource;
 }
 
-export function parseHtml(html: string, sourceUrl: string): ReadingDocument {
+function parseSource(html: string, sourceUrl: string): { document: ReadingDocument; mappedHtml: string } {
   const $ = load(html);
+  $('[data-wablind-id]').removeAttr('data-wablind-id');
   const warnings: string[] = [];
   const blocks: Block[] = [];
   const nextId = () => `element-${blocks.length + 1}`;
   if ($('script,style').length) warnings.push('Scripts e estilos da fonte não foram executados nem incorporados.');
   if ($('form,input,select,textarea,button').length) warnings.push('A fonte contém controles interativos. Apenas seu texto foi preservado; a interação não é reproduzida.');
   $('script,style,template,svg').each((_, el) => { if (el.tagName === 'svg') warnings.push('Um gráfico SVG não foi incorporado. Consulte a fonte e acrescente uma descrição.'); });
-  $('script,style,template').remove();
+  $('script,template').remove();
   function absolute(h: string | undefined) { if (!h) return undefined; try { const u = new URL(h, sourceUrl).href; return safeHref(u) ? u : undefined; } catch { return undefined; } }
   function parts(nodes: AnyNode[], style: Partial<Inline> = {}): Inline[] {
     return nodes.flatMap(node => {
@@ -70,12 +72,21 @@ export function parseHtml(html: string, sourceUrl: string): ReadingDocument {
   const blockTags = new Set(['p', 'div', 'section', 'article', 'main', 'header', 'footer', 'nav', 'aside', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'table', 'blockquote', 'pre', 'figure', 'img', 'dl', 'details', 'form']);
   function walk(nodes: AnyNode[]) {
     let pending: AnyNode[] = [];
-    function flush() { const content = parts(pending); if (content.some(p => p.text.trim())) blocks.push({ id: nextId(), kind: 'paragraph', content }); pending = []; }
-    for (const node of nodes) {
+    function flush() {
+      const content = parts(pending);
+      if (content.some(p => p.text.trim())) {
+        const id = nextId();
+        $(pending).wrapAll(`<span data-wablind-id="${id}"></span>`);
+        blocks.push({ id, kind: 'paragraph', content });
+      }
+      pending = [];
+    }
+    for (const node of [...nodes]) {
       if (node.type !== 'tag') { pending.push(node); continue; }
       const el = node as Element; const tag = el.name;
       if (!blockTags.has(tag) && !['iframe', 'video', 'audio', 'svg', 'canvas', 'embed', 'object'].includes(tag)) { pending.push(node); continue; }
       flush();
+      const before = blocks.length;
       if (/^h[1-6]$/.test(tag)) blocks.push({ id: nextId(), kind: 'heading', level: Number(tag[1]), content: parts(el.children) });
       else if (tag === 'img') {
         blocks.push({ id: nextId(), kind: 'image', alt: el.attribs.alt ?? null, caption: $(el).closest('figure').find('figcaption').first().text().trim(), ...(absolute(el.attribs.src) ? { originalUrl: absolute(el.attribs.src) } : {}) });
@@ -91,6 +102,7 @@ export function parseHtml(html: string, sourceUrl: string): ReadingDocument {
         warnings.push(`Conteúdo ${tag} não incorporado; requer alternativa e revisão humana.`);
         blocks.push({ id: nextId(), kind: 'paragraph', content: [{ text: label || `Conteúdo ${tag}: consultar a fonte original.`, href: sourceUrl }] });
       } else walk(el.children);
+      if (blocks.length === before + 1 && (['img', 'ul', 'ol', 'table', 'pre', 'blockquote', 'iframe', 'video', 'audio', 'svg', 'canvas', 'embed', 'object'].includes(tag) || /^h[1-6]$/.test(tag))) $(el).attr('data-wablind-id', blocks[before].id);
       if (blocks.length > 1500) throw new HttpError(413, 'TOO_MANY_ELEMENTS', 'A página excede 1.500 elementos.');
     }
     flush();
@@ -102,16 +114,22 @@ export function parseHtml(html: string, sourceUrl: string): ReadingDocument {
   const data = { schemaVersion: 1, id: randomUUID(), title: $('title').text().trim().slice(0, 300) || 'Página importada', language: lang || 'pt-BR', source: { url: sourceUrl, capturedAt: new Date().toISOString(), hash: createHash('sha256').update(html).digest('hex'), processorVersion: 'html-1', attribution: `Fonte: ${sourceUrl}. Créditos e condições de uso devem ser conferidos antes da publicação.`, rights: 'review-required' }, blocks, annotations: [], warnings: [...new Set(warnings)].slice(0, 200) };
   const parsed = documentSchema.safeParse(data);
   if (!parsed.success) throw new HttpError(422, 'CONTENT_UNSUPPORTED', 'A estrutura da página excede o formato suportado. A fonte não foi alterada.');
-  return parsed.data;
+  return { document: parsed.data, mappedHtml: $.html() };
 }
-export async function capturePage(url: string, hosts: string[]) {
+export function parseHtml(html: string, sourceUrl: string): ReadingDocument { return parseSource(html, sourceUrl).document; }
+export function parseHtmlWithPreview(html: string, sourceUrl: string): { document: ReadingDocument; preview: SourcePreview } {
+  const result = parseSource(html, sourceUrl);
+  return { document: result.document, preview: sanitizePreview(result.mappedHtml, result.document) };
+}
+export async function capturePageWithPreview(url: string, hosts: string[]) {
   const signal = AbortSignal.timeout(20000);
   try {
     const resource = await fetchResource(url, hosts, signal, MAX_HTML);
     if (!/^text\/html(?:;|$)/i.test(resource.type)) throw new HttpError(415, 'CONTENT_UNSUPPORTED', 'A fonte precisa fornecer uma página HTML.');
     const charset = resource.type.match(/charset=["']?([^;\s"']+)/i)?.[1];
     if (charset && !/^(utf-8|utf8|us-ascii)$/i.test(charset)) throw new HttpError(415, 'CHARSET_UNSUPPORTED', 'A codificação desta página não é suportada.');
-    const doc = parseHtml(resource.data.toString('utf8'), resource.url);
+    const parsed = parseSource(resource.data.toString('utf8'), resource.url);
+    const doc = parsed.document;
     let images = 0;
     for (const b of doc.blocks) {
       if (b.kind !== 'image' || !b.originalUrl) continue;
@@ -124,6 +142,7 @@ export async function capturePage(url: string, hosts: string[]) {
         b.src = `data:${mime};base64,${img.data.toString('base64')}`;
       } catch { doc.warnings.push(`Imagem ${b.id}: não incorporada. Consulte a fonte e revise a alternativa textual.`); }
     }
-    return documentSchema.parse(doc);
+    return { document: documentSchema.parse(doc), preview: sanitizePreview(parsed.mappedHtml, doc) };
   } catch (e) { if (e instanceof HttpError) throw e; throw new HttpError(504, 'CAPTURE_FAILED', 'Não foi possível importar a página dentro dos limites de segurança e tempo.'); }
 }
+export async function capturePage(url: string, hosts: string[]) { return (await capturePageWithPreview(url, hosts)).document; }

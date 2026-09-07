@@ -1,84 +1,129 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { examples } from '../shared/examples';
 import { VERSION, documentSchema, newWorkspace, parseDocument, type ReadingDocument, type Workspace } from '../shared/model';
+import { examples } from '../shared/examples';
 import { readLibrary, writeLibrary, download } from './storage';
-import { Reading, WaterIllustration } from './Content';
+import { Reading } from './Content';
 import { exportHtml } from '../shared/export';
 import { request } from './api';
+import { Home } from './Home';
+import { Logo } from './Logo';
+import { History, Help } from './History';
+import { reconcileWorkspace } from './workspace-state';
+import { LoadBoundary } from './LoadBoundary';
 const Editor = lazy(() => import('./Editor'));
 const Account = lazy(() => import('./Account'));
-function initialLibrary() { try { return { library: readLibrary(), error: '' }; } catch { return { library: {}, error: 'Não foi possível recuperar os projetos locais. Não gravaremos sobre eles. Exporte o armazenamento para recuperação antes de continuar.' }; } }
 
+function initialLibrary() {
+  try { return { library: readLibrary(), error: '' }; }
+  catch { return { library: {} as Record<string, Workspace>, error: 'Não foi possível recuperar os trabalhos deste navegador. Os dados existentes foram preservados; exporte qualquer trabalho novo antes de fechar a página.' }; }
+}
 export default function App() {
   const [initial] = useState(initialLibrary);
   const [library, setLibrary] = useState<Record<string, Workspace>>(initial.library);
   const [storageError, setStorageError] = useState(initial.error);
   const [route, setRoute] = useState(location.hash.slice(1) || '/');
-  const [status, setStatus] = useState(''); const [error, setError] = useState('');
+  const [status, setStatus] = useState('');
+  const [error, setError] = useState('');
   const [publicDoc, setPublicDoc] = useState<ReadingDocument | null>(null);
-  const [loading, setLoading] = useState(false); const [retry, setRetry] = useState(0);
-  const main = useRef<HTMLElement>(null); const previousRoute = useRef(route);
-  const [confirmReset, setConfirmReset] = useState<string | null>(null);
-  const routeParts = route.split('?')[0].split('/');
-  const page = routeParts[1]; const id = routeParts[2];
+  const [loading, setLoading] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [resetId, setResetId] = useState('');
+  const main = useRef<HTMLElement>(null);
+  const routeParts = route.split('?')[0].split('/').filter(Boolean);
+  const page = routeParts[0] || '';
+  const id = routeParts[1];
   const current = id ? library[id] : undefined;
-  function announce(s: string) { setStatus(''); setTimeout(() => setStatus(s), 10); }
-  useEffect(() => { const listener = () => { setRoute(location.hash.slice(1) || '/'); setError(''); }; window.addEventListener('hashchange', listener); return () => window.removeEventListener('hashchange', listener); }, []);
+  const readingDoc = page === 'published' ? publicDoc : page === 'example' ? examples.find(e => e.document.id === id)?.document : page === 'snapshot' ? current?.publication : current?.document;
+  function announce(message: string) { setStatus(message); }
+
   useEffect(() => {
-    document.title = `${current?.document.title || ({ projects: 'Meus projetos', about: 'Sobre o projeto', help: 'Ajuda e acessibilidade', published: 'Leitura publicada' }[page] || 'Caminhos para uma leitura acessível')} — WABlind`;
-    if (previousRoute.current !== route) main.current?.focus();
-    previousRoute.current = route;
+    const listener = () => { setRoute(location.hash.slice(1) || '/'); setError(''); setStatus(''); };
+    window.addEventListener('hashchange', listener);
+    return () => window.removeEventListener('hashchange', listener);
+  }, []);
+  useEffect(() => {
+    const titles: Record<string, string> = { projects: 'Área do professor', read: 'Prévia da leitura', snapshot: 'Leitura preparada neste navegador', published: 'Leitura publicada', example: 'Exemplo demonstrativo', examples: 'Exemplos demonstrativos', about: 'A evolução da WABlind', history: 'A evolução da WABlind', help: 'Ajuda e acessibilidade' };
+    document.title = `${titles[page] || 'Buscar uma página'} — WABlind`;
+    if (page) main.current?.focus();
   }, [route]);
   useEffect(() => {
     if (page !== 'published' || !id) return;
-    let active = true; setPublicDoc(null); setLoading(true); setError('');
-    request<{ document: ReadingDocument }>(`/publications/${encodeURIComponent(id)}`, 'GET', undefined, false).then(data => { if (active) setPublicDoc(documentSchema.parse(data.document)); }).catch(e => { if (active) setError(e.message); }).finally(() => { if (active) setLoading(false); });
+    let active = true;
+    setPublicDoc(null); setLoading(true); setError('');
+    void request<{ document: ReadingDocument }>(`/publications/${encodeURIComponent(id)}`, 'GET', undefined, false)
+      .then(data => { if (active) setPublicDoc(documentSchema.parse(data.document)); })
+      .catch(e => { if (active) setError(e instanceof Error ? e.message : 'Não foi possível abrir a publicação.'); })
+      .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [route, retry]);
-  function persist(w: Workspace) {
-    if (!w.revisions.length && !w.document.annotations.length && library[w.document.id]) {
-      try { sessionStorage.removeItem(`wablind.form-drafts.${w.document.id}`); } catch { /* Export remains available when browser storage is restricted. */ }
-    }
-    const next = { ...library, [w.document.id]: w }; setLibrary(next);
-    if (initial.error) return;
-    try { writeLibrary(next); setStorageError(''); } catch { setStorageError('Não foi possível gravar neste navegador. Mantenha a página aberta e exporte o JSON do seu trabalho.'); }
+
+  function persist(w: Workspace, expectedDocument?: ReadingDocument) {
+    setLibrary(previous => {
+      const next = { ...previous, [w.document.id]: reconcileWorkspace(previous[w.document.id], w, expectedDocument) };
+      if (!initial.error) try { writeLibrary(next); setStorageError(''); } catch { setStorageError('Não foi possível gravar neste navegador. Exporte o JSON antes de fechar a página.'); }
+      return next;
+    });
   }
   function start(doc: ReadingDocument, fresh = false) {
     if (fresh || !library[doc.id]) persist(newWorkspace(doc));
-    location.hash = '/edit/' + doc.id;
+    setResetId(''); location.hash = '/edit/' + doc.id;
   }
   function openRemote(w: Workspace) {
     const old = library[w.document.id];
-    if (old && JSON.stringify(old.document) !== JSON.stringify(old.savedDocument)) {
-      const copy = structuredClone(old); copy.document.id = crypto.randomUUID(); delete copy.remoteId; delete copy.remoteVersion; delete copy.ownerId;
-      const next = { ...library, [copy.document.id]: copy, [w.document.id]: w }; setLibrary(next);
-      try { writeLibrary(next); } catch { setStorageError('O armazenamento local está cheio. Exporte seu trabalho.'); }
-      announce('O rascunho anterior foi preservado como cópia local.');
-    } else persist(w);
+    const draftPrefixes = ['wablind.resource.', 'wablind.decision.', 'wablind.representation.', 'wablind.form-drafts.'];
+    const pending = old ? Object.keys(sessionStorage).filter(key => draftPrefixes.some(prefix => key === prefix + old.document.id || key.startsWith(prefix + old.document.id + '.'))).map(key => ({ key, value: sessionStorage.getItem(key)! })) : [];
+    if (old && (JSON.stringify(old.document) !== JSON.stringify(old.savedDocument) || pending.length)) {
+      if (old.remoteVersion === w.remoteVersion) {
+        announce('Continuando seu rascunho neste navegador, incluindo campos ainda não aplicados.');
+        location.hash = '/edit/' + old.document.id;
+        return;
+      }
+      if (initial.error) throw new Error('Não foi possível preservar o rascunho local. Abra-o na lista e exporte uma cópia antes de carregar outra revisão.');
+      const copy = structuredClone(old);
+      const copyId = crypto.randomUUID();
+      copy.document.id = copyId;
+      copy.document.title = `${copy.document.title.slice(0, 270)} (rascunho preservado)`;
+      if (copy.savedDocument) copy.savedDocument.id = copyId;
+      for (const revision of copy.revisions) revision.document.id = copyId;
+      delete copy.remoteId; delete copy.remoteVersion; delete copy.ownerId; copy.publication = null;
+      const next = { ...library, [copyId]: copy, [w.document.id]: w };
+      try {
+        for (const draft of pending) {
+          const prefix = draftPrefixes.find(prefix => draft.key === prefix + old.document.id || draft.key.startsWith(prefix + old.document.id + '.'))!;
+          sessionStorage.setItem(prefix + copyId + draft.key.slice((prefix + old.document.id).length), draft.value);
+        }
+        writeLibrary(next);
+      } catch { throw new Error('Não foi possível preservar todos os campos do rascunho. A revisão da conta não foi aberta. Retome o trabalho local e exporte uma cópia.'); }
+      setLibrary(next);
+      try { for (const draft of pending) sessionStorage.removeItem(draft.key); }
+      catch { announce('O rascunho foi preservado em cópia. Retome e revise os campos antes de abrir a versão da conta.'); location.hash = '/edit/' + copyId; return; }
+      announce('A conta tem uma revisão mais recente. Seu rascunho e os campos ainda não aplicados foram preservados numa cópia local.');
+    } else {
+      persist(w);
+    }
     location.hash = '/edit/' + w.document.id;
   }
-  const readingDoc = page === 'published' ? publicDoc : page === 'snapshot' ? current?.publication : current?.document;
-  return <>
-    <a className="skip-link" href="#main" onClick={e => { e.preventDefault(); main.current?.focus(); }}>Ir para o conteúdo principal</a>
-    <header className="site-header"><a className="brand" href="#/" aria-label="WABlind, início"><span className="brand-symbol" aria-hidden="true">w<span>•</span></span><span>WA<span className="brand-light">Blind</span><small>ACESSO COM CONTEXTO</small></span></a><nav aria-label="Navegação principal"><a href="#/" aria-current={!page ? 'page' : undefined}>Explorar</a><a href="#/projects" aria-current={page === 'projects' ? 'page' : undefined}>Meus projetos</a><a href="#/about" aria-current={page === 'about' ? 'page' : undefined}>Sobre</a><a href="#/help" aria-current={page === 'help' ? 'page' : undefined}>Ajuda</a></nav><span className="beta-tag">BETA 2.0</span></header>
-    <div className="status-region" role="status" aria-live="polite">{status}</div>
+
+  const exampleCards = <ul className="example-grid">{examples.map(e => <li className="example-card" key={e.document.id}><p className="eyebrow">{e.tag}</p><h3>{e.document.title}</h3><p>{e.summary}</p><div className="actions"><button className="primary" onClick={() => start(e.document)}>Editar exemplo: {e.document.title}</button><a className="button" href={`#/example/${e.document.id}`}>Ler exemplo</a></div>{library[e.document.id] && <div className="reset-example">{resetId === e.document.id ? <><p>Reiniciar remove somente o rascunho e o histórico deste exemplo neste navegador. Exporte o JSON antes se quiser guardar as alterações.</p><button onClick={() => start(e.document, true)}>Confirmar reinício do exemplo</button><button onClick={() => setResetId('')}>Cancelar reinício</button></> : <button className="text-button" onClick={() => setResetId(e.document.id)}>Reiniciar exemplo</button>}</div>}</li>)}</ul>;
+
+  return <div className={`app-shell${!page ? ' app-home' : ''}`}>
+    <a className="skip-link" href="#main" onClick={event => { event.preventDefault(); main.current?.focus(); }}>Ir para o conteúdo principal</a>
+    <header className="site-header"><a className="brand" href="#/" aria-label="WABlind, início"><Logo /></a><nav aria-label="Navegação principal"><a href="#/projects" aria-current={page === 'projects' ? 'page' : undefined}>Área do professor</a><a href="#/help" aria-current={page === 'help' ? 'page' : undefined}>Ajuda</a></nav></header>
+    <div className="status-region" role="status">{status}</div>
     <main id="main" ref={main} tabIndex={-1}>
-      {storageError && <div className="error" role="alert"><p>{storageError}</p><button onClick={() => download('wablind-recuperacao.json', localStorage.getItem('wablind.workspace.v1') || '{}', 'application/json')}>Exportar armazenamento para recuperação</button></div>}
-      {error && <p className="error" role="alert">{error}</p>}
-      {!page && <>
-        <section className="hero"><div className="hero-copy"><p className="eyebrow"><span className="tiny-line" /> TECNOLOGIA + MEDIAÇÃO HUMANA</p><h1>Todo conteúdo merece<br />um caminho de <em>acesso.</em></h1><p className="hero-description">Explore, descreva e organize conteúdos educativos. Transforme sua mediação em uma leitura com mais contexto — e com a pessoa no centro.</p><div className="actions"><a className="button primary" href="#examples" onClick={e => { e.preventDefault(); document.getElementById('examples')?.scrollIntoView(); document.getElementById('examples-title')?.focus(); }}>Experimentar a WABlind <span aria-hidden="true">↗</span></a><a className="quiet-link" href="#/about">Conheça o projeto <span aria-hidden="true">→</span></a></div><p className="hero-note">Sem cadastro para explorar. Sem automação decidindo por você.</p></div><div className="hero-art" aria-label="Exemplo de uma descrição contextual"><div className="art-top"><span className="dot" /><span>UMA VIAGEM COM A ÁGUA</span><span>01 / 03</span></div><WaterIllustration description="O Sol aquece a água do rio; setas representam a evaporação e o retorno como chuva." /><div className="art-note"><span className="annotation-label">DESCRIÇÃO COM CONTEXTO</span><p>O Sol aquece a água do rio. Ela sobe como vapor e retorna à superfície na forma de chuva.</p><span className="small">✓ Uma contribuição humana para a leitura</span></div><span className="art-caption">O detalhe que você descreve abre um novo caminho.</span></div></section>
-        <section className="principles" aria-label="Como funciona"><div><span>01</span><p><strong>Escolha um conteúdo</strong>Comece com um exemplo pronto.</p></div><div><span>02</span><p><strong>Acrescente contexto</strong>Use marcadores e descrições.</p></div><div><span>03</span><p><strong>Prepare a leitura</strong>Revise, salve e exporte.</p></div></section>
-        <section id="examples" className="examples-section"><div className="section-heading"><div><p className="eyebrow">APRENDER EXPERIMENTANDO</p><h2 id="examples-title" tabIndex={-1}>Por onde vamos começar?</h2></div><p>Três pequenos percursos para conhecer<br />as possibilidades da mediação.</p></div><div className="example-grid">{examples.map((item, index) => <article className={`example-card example-${index}`} key={item.document.id}><div className="card-top"><span className="eyebrow">{item.tag}</span><span className="card-number">0{index + 1}</span></div><h3>{item.document.title}</h3><p>{item.summary}</p><div className="card-bottom"><span>{item.duration}</span><button onClick={() => start(item.document)} aria-label={`Explorar: ${item.document.title}`}>Explorar <span aria-hidden="true">↗</span></button></div></article>)}</div><p className="small muted">Materiais demonstrativos originais. Suas alterações ficam neste navegador até serem exportadas ou enviadas a um projeto conectado.</p></section>
-        <section className="research-strip"><span className="research-year">2018 <span>→</span> hoje</span><div><h2>Uma trajetória de pesquisa. Uma ferramenta em movimento.</h2><p>A WABlind nasceu do estudo sobre acessibilidade e comunicabilidade de conteúdo web mediado. Esta atualização preserva sua proposta e renova a experiência.</p></div><a href="#/about">Da pesquisa à prática <span aria-hidden="true">↗</span></a></section>
-      </>}
-      {page === 'projects' && <><div className="page-heading"><p className="eyebrow">ESPAÇO DE MEDIAÇÃO</p><h1>Meus projetos</h1><p>Retome suas leituras e mantenha suas contribuições por perto.</p></div><section className="local-projects"><h2>Neste navegador</h2>{Object.values(library).length ? <ul className="project-list">{Object.values(library).map(w => <li key={w.document.id}><div><h3>{w.document.title}</h3><p>{w.document.annotations.length} marcações · {w.revisions.length} revisões · {w.remoteId ? 'cópia de projeto conectado' : 'local'}</p></div><div className="actions"><a className="button" href={`#/edit/${w.document.id}`}>Continuar edição</a><button onClick={() => setConfirmReset(w.document.id)}>Reiniciar</button></div>{confirmReset === w.document.id && <div className="reset-confirm"><p>Reiniciar remove as marcações e revisões desta cópia local. O projeto no serviço não será alterado. Exporte o JSON antes, se precisar guardá-lo.</p><button className="danger" onClick={() => { const original = examples.find(e => e.document.id === w.document.id)?.document || { ...w.document, annotations: [] }; persist(newWorkspace(original)); setConfirmReset(null); announce('Cópia local reiniciada.'); }}>Confirmar reinício local</button><button onClick={() => setConfirmReset(null)}>Cancelar</button></div>}</li>)}</ul> : <div className="empty-state"><h3>Seu primeiro percurso começa aqui.</h3><p>Escolha um exemplo ou importe um arquivo que você já exportou.</p><a className="button primary" href="#/">Explorar exemplos</a></div>}<div className="import-file"><label htmlFor="import-json">Reimportar projeto JSON <span className="muted">(até 5 MB)</span></label><input id="import-json" type="file" accept="application/json,.json" onChange={async e => { const file = e.target.files?.[0]; if (!file) return; try { if (file.size > 5 * 1024 * 1024) throw new Error('O arquivo excede 5 MB.'); const doc = parseDocument(await file.text()); doc.id = crypto.randomUUID(); start(doc, true); announce('Arquivo importado como nova cópia local.'); } catch (e) { setError((e as Error).message); } }} /></div></section><Suspense fallback={<p role="status">Carregando área conectada…</p>}><Account open={openRemote} announce={announce} /></Suspense></>}
-      {page === 'edit' && (current ? <Suspense fallback={<p role="status">Carregando editor…</p>}><Editor key={id} workspace={current} update={persist} announce={announce} /></Suspense> : <Missing />)}
-      {['read', 'snapshot', 'published'].includes(page) && <>{loading ? <p role="status">Carregando leitura…</p> : readingDoc ? <><div className="reader-toolbar"><a href={page === 'published' ? '#/' : `#/edit/${id}`}>← {page === 'published' ? 'Explorar a WABlind' : 'Voltar à edição'}</a><span>{page === 'published' ? 'Publicação' : page === 'snapshot' ? 'Revisão preparada · somente local' : 'Prévia do rascunho · somente local'}</span><button onClick={() => download(`${readingDoc.id}.html`, exportHtml(readingDoc), 'text/html')}>Exportar HTML</button></div><Reading document={readingDoc} /></> : page === 'published' ? <div className="empty-state"><h1>Leitura não disponível</h1><p>A publicação pode ter sido retirada ou o serviço pode estar indisponível.</p><button onClick={() => setRetry(v => v + 1)}>Tentar novamente</button><a className="inline-link" href="#/">Explorar os exemplos locais</a></div> : <Missing />}</>}
-      {page === 'about' && <article className="prose"><p className="eyebrow">PESQUISA QUE CONTINUA</p><h1>Acesso não é só chegar.<br />É poder compreender.</h1><p className="lead">A WABlind combina apoio técnico e mediação humana para organizar conteúdos web e acrescentar descrições relevantes ao contexto educativo.</p><h2>De onde viemos</h2><p>A proposta foi apresentada no artigo “Avaliação da Comunicabilidade da WABlind em Enciclopédias On-line”, de Natacsha Ordones Raposo, Alberto Castro e Thais Castro, publicado no SBIE em 2018.</p><p>O estudo examinou a comunicabilidade com professores. Os achados orientam esta atualização: seleção explícita, marcadores explicados, acompanhamento de contribuições e revisão antes da publicação.</p><p><a href="https://doi.org/10.5753/cbie.sbie.2018.1153">Consultar o artigo original ↗</a></p><h2>O que estamos atualizando</h2><p>Uma aplicação da trajetória de pesquisa de Natacsha, agora preparada para o portfólio de aplicações desenvolvidas. O projeto se relaciona à organização e ao uso contextualizado do conhecimento de acessibilidade, sem integrar automaticamente a MADO ou acrescentar uma nova avaliação à tese.</p><h2>O que esta versão não promete</h2><p>A WABlind não torna qualquer site automaticamente acessível. Não inventa descrições, não decide a relevância pedagógica por você e não comprova conformidade por contagem de alertas. Os resultados de 2018 não são resultados desta versão.</p><div className="notice"><strong>Versão {VERSION}</strong><p>Demonstração local independente. Recursos conectados dependem da configuração de serviços externos. Não houve nova avaliação com participantes nesta entrega.</p></div><h2>Autoria e procedência</h2><p>Projeto da trajetória de pesquisa de Natacsha. Os exemplos atuais são materiais demonstrativos originais; não reproduzem dados de estudantes ou participantes. Os créditos e direitos das fontes importadas devem ser preservados.</p></article>}
-      {page === 'help' && <article className="prose"><p className="eyebrow">AJUDA E ACESSIBILIDADE</p><h1>Você tem o controle.</h1><h2>Como preparar uma leitura</h2><ol><li>Abra um exemplo na página Explorar.</li><li>Selecione um elemento na lista ou use “Marcar trecho”.</li><li>Escolha um tipo, escreva a descrição e aplique a marcação.</li><li>Salve uma revisão e abra a prévia da leitura.</li><li>Exporte HTML para ler ou JSON para continuar a edição depois.</li></ol><h2>Usar pelo teclado</h2><p>Use Tab e Shift+Tab para percorrer os controles. Ative botões com Enter ou Espaço. O link “Ir para o conteúdo principal” pula a navegação. Não é necessário arrastar elementos nem usar o botão direito do mouse.</p><h2>O que é salvo</h2><p>O rascunho é recuperável neste navegador quando o armazenamento local está disponível. “Salvar revisão” cria um ponto no histórico. “Publicar” disponibiliza uma revisão conectada e não acontece automaticamente. Limpar os dados do navegador pode apagar projetos locais: exporte uma cópia JSON.</p><h2>Privacidade</h2><p>Não insira dados pessoais de estudantes. A demonstração não envia seu conteúdo a um servidor. Nos projetos conectados, conteúdo e contribuições são enviados aos serviços configurados; rascunhos são privados e somente a proprietária publica. Imagens remotas não são carregadas diretamente no seu navegador durante a captura.</p><h2>Limites da importação</h2><p>São aceitas páginas HTML públicas em domínios habilitados. Scripts, formulários e conteúdo ativo não são executados. Elementos não suportados são sinalizados. A adaptação não modifica a fonte.</p><h2>Estado de acessibilidade</h2><p>Projetada para WCAG 2.2 AA, com HTML semântico, operação por teclado e comunicação textual dos estados. Não há declaração de conformidade. Os testes automatizados não substituem avaliação com leitores de tela e pessoas com deficiência.</p><h2>Encontrou uma barreira?</h2><p>Registre a página, o controle, o que esperava e o que aconteceu. Informe navegador e tecnologia assistiva, sem incluir dados pessoais ou conteúdo privado.</p><a href="https://github.com/natacsham" rel="noreferrer">Perfil da autora no GitHub ↗</a></article>}
-      {page && !['projects', 'edit', 'read', 'snapshot', 'published', 'about', 'help'].includes(page) && <Missing />}
+      {storageError && <p className="error" role="alert">{storageError}</p>}{error && <p className="error" role="alert">{error}</p>}
+      {!page && <Home library={library} />}
+      {page === 'projects' && <><div className="page-heading"><p className="eyebrow">CONTEÚDO, ATIVIDADE E MEDIAÇÃO</p><h1>Área do professor</h1><p>Abra uma página, selecione seus elementos e prepare as formas de explorar sua atividade.</p></div><LoadBoundary area="a conta do professor"><Suspense fallback={<p role="status">Carregando conta…</p>}><Account open={openRemote} announce={announce} /></Suspense></LoadBoundary>
+        <section className="local-projects" aria-labelledby="local-title"><h2 id="local-title">Trabalhos neste navegador</h2><p>Rascunhos e leituras locais não ficam disponíveis para outras pessoas na internet.</p>{Object.values(library).length ? <ul className="project-list">{Object.values(library).map(w => <li key={w.document.id}><div><h3>{w.document.title}</h3><p>{w.revisions.length} revisão(ões) · {w.remoteId ? 'Rascunho da conta, preservado neste navegador' : 'Trabalho local'}</p></div><div className="actions"><a className="button" href={`#/edit/${w.document.id}`}>Continuar edição: {w.document.title}</a>{w.publication && !w.remoteId && <a href={`#/snapshot/${w.document.id}`}>Abrir leitura local</a>}</div></li>)}</ul> : <p>Nenhum trabalho salvo neste navegador.</p>}
+          <details className="file-recovery"><summary>Recuperar uma cópia de segurança JSON</summary><p>Esta opção recupera trabalho já exportado pela WABlind. Para começar com um site, informe a URL na área conectada.</p><label htmlFor="backup-file">Arquivo JSON exportado</label><input id="backup-file" type="file" accept="application/json,.json" onChange={event => { const file = event.target.files?.[0]; if (file) void file.text().then(text => { const doc = parseDocument(text); if (library[doc.id]) { doc.id = crypto.randomUUID(); doc.title = `${doc.title.slice(0, 275)} (cópia recuperada)`; } persist(newWorkspace(doc)); announce('Cópia recuperada. Abra o trabalho na lista.'); }).catch(e => setError(e instanceof Error ? e.message : 'Arquivo incompatível.')); event.target.value = ''; }} /></details>
+        </section><section className="examples-section"><h2>Experimente sem conta</h2><p>Materiais próprios, editáveis localmente, disponíveis mesmo sem o serviço de captura.</p>{exampleCards}</section></>}
+      {page === 'examples' && <section className="examples-section"><div className="page-heading"><p className="eyebrow">DEMONSTRAÇÃO LOCAL</p><h1>Experimente a mediação</h1><p>Três materiais próprios para selecionar, classificar e preparar representações. Alterações ficam neste navegador e podem ser reiniciadas.</p></div>{exampleCards}</section>}
+      {page === 'edit' && (current ? <LoadBoundary key={id} area="o editor" saveCopy={() => download(`${current.document.id}.json`, JSON.stringify(current.document, null, 2), 'application/json')}><Suspense fallback={<p role="status">Carregando editor…</p>}><Editor key={id} workspace={current} update={persist} announce={announce} /></Suspense></LoadBoundary> : <Missing />)}
+      {['read', 'snapshot', 'published', 'example'].includes(page) && (loading ? <p role="status">Carregando leitura…</p> : readingDoc ? <><div className="reader-toolbar"><a href={page === 'published' || page === 'example' ? '#/' : `#/edit/${id}`}>← {page === 'published' || page === 'example' ? 'Voltar à busca' : 'Voltar à edição'}</a><span>{page === 'published' ? 'Revisão publicada' : page === 'snapshot' ? 'Revisão preparada · somente neste navegador' : page === 'example' ? 'Conteúdo demonstrativo próprio' : 'Prévia do rascunho'}</span><button onClick={() => download(`${readingDoc.id}.html`, exportHtml(readingDoc), 'text/html')}>Exportar HTML</button></div><Reading key={`${page}-${id}`} document={readingDoc} /></> : page === 'published' ? <div className="empty-state"><h1>Leitura não disponível</h1><p>A publicação pode ter sido retirada ou o serviço pode estar indisponível.</p><button onClick={() => setRetry(v => v + 1)}>Tentar novamente</button><a className="button" href="#/">Voltar à busca</a></div> : <Missing />)}
+      {(page === 'about' || page === 'history') && <History />}{page === 'help' && <Help />}
+      {page && !['projects', 'edit', 'read', 'snapshot', 'published', 'example', 'examples', 'about', 'history', 'help'].includes(page) && <Missing />}
     </main>
-    <footer className="site-footer"><div><a className="footer-brand" href="#/">WABlind</a><p>Conhecimento compartilhado.<br />Acesso construído em conjunto.</p></div><div><a href="#/about">Sobre o projeto</a><a href="#/help">Ajuda e acessibilidade</a><a href="https://doi.org/10.5753/cbie.sbie.2018.1153">Artigo de 2018 ↗</a></div><p className="footer-note">Uma aplicação da trajetória de pesquisa de Natacsha.<br />{VERSION} · Mediação humana, sempre.</p></footer>
-  </>;
+    <footer className="site-footer"><div><span className="footer-credit">Natacsha Melo · UFAM · PPGI</span><span className="footer-version">{VERSION} · Mediação multimodal de conteúdo web</span></div><nav aria-label="Informações da WABlind"><a href="#/history">A evolução da WABlind</a><a href="#/help">Ajuda e acessibilidade</a></nav></footer>
+  </div>;
 }
-function Missing() { return <div className="empty-state"><h1>Projeto não encontrado neste navegador</h1><p>Retome um projeto salvo, reimporte seu JSON ou explore um exemplo.</p><a href="#/projects" className="button primary">Abrir meus projetos</a></div>; }
+function Missing() { return <div className="empty-state"><h1>Recurso não encontrado</h1><p>Retome um trabalho salvo ou escolha um exemplo.</p><a href="#/projects" className="button primary">Ir para a área do professor</a></div>; }

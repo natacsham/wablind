@@ -19,10 +19,32 @@ export async function request<T>(path: string, method = 'GET', body?: unknown, a
   return result as T;
 }
 export type RemoteProject = { id: string; owner_id: string; title: string; version: number; updated_at: string; published_revision_id: string | null };
+export type PublicationSearchItem = { id: string; title: string; sourceUrl: string; updatedAt: string; purpose?: string };
+export type PublicationLookup = { id: string };
 export type RemoteDetail = { project: RemoteProject; document: ReadingDocument; revisions: { id: string; created_at: string; document: ReadingDocument }[]; members: { user_id: string }[] };
 export async function loadRemote(id: string) {
   const data = await request<RemoteDetail>(`/projects/${encodeURIComponent(id)}`);
   data.document = documentSchema.parse(data.document);
   data.revisions = data.revisions.map(r => ({ ...r, document: documentSchema.parse(r.document) }));
   return data;
+}
+
+export async function searchPublications(query: string, limit = 8): Promise<PublicationSearchItem[]> {
+  const encoded = encodeURIComponent(query.trim());
+  return request<PublicationSearchItem[]>(`/publications/search?q=${encoded}&limit=${Math.min(20, Math.max(1, limit))}`, 'GET', undefined, false);
+}
+
+export async function resolvePublicationByUrl(url: string): Promise<PublicationLookup> {
+  return request<PublicationLookup>(`/publications/resolve?url=${encodeURIComponent(url.trim())}`, 'GET', undefined, false);
+}
+
+export async function publicationsByUrl(url: string): Promise<PublicationSearchItem[]> {
+  return request<PublicationSearchItem[]>(`/publications/by-url?url=${encodeURIComponent(url.trim())}`, 'GET', undefined, false);
+}
+
+export async function signInProfessor(username: string, password: string): Promise<void> {
+  if (!supabase) throw new ApiError('A entrada da conta ainda não está disponível. Os exemplos locais continuam funcionando.', 503, 'NOT_CONFIGURED');
+  const tokens = await request<{ access_token: string; refresh_token: string }>('/auth/login', 'POST', { username: username.trim(), password }, false);
+  const { error } = await supabase.auth.setSession(tokens);
+  if (error) throw new ApiError('A sessão não pôde ser iniciada. Tente entrar novamente.', 401, 'SESSION_FAILED');
 }

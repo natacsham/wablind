@@ -5,16 +5,17 @@ import { rateLimit } from 'express-rate-limit';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
-import { capturePage } from './capture';
+import { capturePageWithPreview } from './capture';
 import { HttpError } from './errors';
-import { documentSchema, VERSION } from '../shared/model';
+import { documentSchema, publicationIssues, VERSION } from '../shared/model';
 import { exportHtml } from '../shared/export';
 
-export type Config = { supabaseUrl: string; publicKey: string; serviceKey: string; origins: string[]; hosts: string[] };
+export type Config = { supabaseUrl: string; publicKey: string; serviceKey: string; origins: string[]; hosts: string[]; professorEmail?: string };
 type Session = { userId: string; db: SupabaseClient };
 const uuid = z.uuid();
 function dataOrThrow<T>(data: T, error: { code?: string; message: string } | null): NonNullable<T> {
   if (error) {
+    if (error.code === 'PGRST116') throw new HttpError(404, 'NOT_FOUND', 'Registro não encontrado ou sem acesso para esta conta.');
     if (/CONFLICT/.test(error.message)) throw new HttpError(409, 'REVISION_CONFLICT', 'Outra revisão foi salva. Seu rascunho local foi preservado. Exporte-o e reabra o projeto conectado para comparar.');
     if (/FORBIDDEN|42501/.test(error.message + error.code)) throw new HttpError(403, 'FORBIDDEN', 'Você não tem autorização para esta operação.');
     if (/NOT_FOUND/.test(error.message)) throw new HttpError(404, 'NOT_FOUND', 'Projeto ou publicação não encontrado.');
@@ -51,6 +52,37 @@ export function createApp(config: Config) {
   };
   const session = (res: Response) => res.locals.session as Session;
   const rpc = async (db: SupabaseClient, name: string, args: Record<string, unknown> = {}) => { const { data, error } = await db.rpc(name, args); return dataOrThrow(data, error); };
+  const loginLimit = rateLimit({ windowMs: 15 * 60000, limit: 5, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: { code: 'LOGIN_LIMIT', message: 'Muitas tentativas de entrada. Aguarde quinze minutos.' } } });
+  app.post('/v1/auth/login', loginLimit, async (req, res) => {
+    const input = z.object({ username: z.string().trim().min(1).max(100), password: z.string().min(1).max(200) }).strict().parse(req.body);
+    if (!config.professorEmail) throw new HttpError(503, 'LOGIN_NOT_CONFIGURED', 'A entrada da área do professor ainda não foi configurada.');
+    if (input.username.toLowerCase() !== 'professor') throw new HttpError(401, 'LOGIN_FAILED', 'Usuário ou senha incorretos.');
+    const authClient = createClient(config.supabaseUrl, config.publicKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data, error } = await authClient.auth.signInWithPassword({ email: config.professorEmail, password: input.password });
+    if (error || !data.session) throw new HttpError(401, 'LOGIN_FAILED', 'Usuário ou senha incorretos.');
+    res.json({ access_token: data.session.access_token, refresh_token: data.session.refresh_token });
+  });
+  app.get('/v1/publications/search', async (req, res) => {
+    const input = z.object({ q: z.string().max(300).default(''), limit: z.coerce.number().int().min(1).max(20).default(8) }).parse({ q: req.query.q || '', limit: req.query.limit });
+    const db = createClient(config.supabaseUrl, config.publicKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const result = await db.rpc('wablind_search_publications', { p_query: input.q, p_limit: input.limit });
+    const rows = dataOrThrow(result.data, result.error);
+    res.json((rows || []).map((row: { id: string; title: string; source_url: string; updated_at: string }) => ({ id: row.id, title: row.title, sourceUrl: row.source_url, updatedAt: row.updated_at })));
+  });
+  app.get('/v1/publications/resolve', async (req, res) => {
+    const input = z.object({ url: z.string().url().max(2048) }).strict().parse({ url: String(req.query.url || '') });
+    const db = createClient(config.supabaseUrl, config.publicKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const result = await db.rpc('wablind_publication_by_url', { p_url: input.url });
+    const id = dataOrThrow(result.data, result.error);
+    if (!id) throw new HttpError(404, 'NOT_FOUND', 'Esta URL ainda não possui versão publicada na WABlind.');
+    res.json({ id });
+  });
+  app.get('/v1/publications/by-url', async (req, res) => {
+    const input = z.object({ url: z.string().url().max(2048) }).strict().parse({ url: String(req.query.url || '') });
+    const db = createClient(config.supabaseUrl, config.publicKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const rows = await rpc(db, 'wablind_publications_by_url', { p_url: input.url }) as { id: string; title: string; source_url: string; updated_at: string; purpose: string }[];
+    res.json(rows.map(row => ({ id: row.id, title: row.title, sourceUrl: row.source_url, updatedAt: row.updated_at, purpose: row.purpose })));
+  });
   app.get('/v1/publications/:id', async (req, res) => {
     const id = uuid.parse(req.params.id);
     const db = createClient(config.supabaseUrl, config.publicKey, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -60,17 +92,19 @@ export function createApp(config: Config) {
   app.use('/v1', authenticate);
   const captureLimit = rateLimit({ windowMs: 60000, limit: 5, keyGenerator: (_req, res) => session(res).userId, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: { code: 'CAPTURE_LIMIT', message: 'Limite de cinco capturas por minuto atingido.' } } });
   app.post('/v1/captures', captureLimit, async (req, res) => {
-    const input = z.object({ url: z.string().max(2048), rightsConfirmed: z.literal(true) }).strict().parse(req.body);
+    const input = z.object({ url: z.string().max(2048), rightsConfirmed: z.literal(true), rightsBasis: z.enum(['own', 'licensed', 'permission']).optional(), rightsReference: z.string().trim().min(1).max(2000).optional() }).strict().parse(req.body);
     const { db, userId } = session(res);
     // Atomic database quota works across service instances and restarts.
     await rpc(db, 'wablind_capture_quota');
-    const doc = await capturePage(input.url, config.hosts);
-    const id = randomUUID(); const path = `${userId}/${id}.json`;
+    const { document: doc, preview } = await capturePageWithPreview(input.url, config.hosts);
+    const id = randomUUID(); const path = `${userId}/${id}.json`; const previewPath = `${userId}/${id}-preview.json`;
     const uploaded = await admin!.storage.from('wablind-captures').upload(path, JSON.stringify(doc), { contentType: 'application/json', upsert: false });
     dataOrThrow(uploaded.data, uploaded.error);
-    const inserted = await admin!.from('wablind_captures').insert({ id, owner_id: userId, document: doc, storage_path: path }).select('id').single();
-    if (inserted.error) { await admin!.storage.from('wablind-captures').remove([path]); dataOrThrow(inserted.data, inserted.error); }
-    res.status(201).json({ id, document: doc });
+    const uploadedPreview = await admin!.storage.from('wablind-captures').upload(previewPath, JSON.stringify(preview), { contentType: 'application/json', upsert: false });
+    if (uploadedPreview.error) { await admin!.storage.from('wablind-captures').remove([path]); dataOrThrow(uploadedPreview.data, uploadedPreview.error); }
+    const inserted = await admin!.from('wablind_captures').insert({ id, owner_id: userId, document: doc, storage_path: path, preview_path: previewPath, rights_basis: input.rightsBasis || null, rights_reference: input.rightsReference || null }).select('id').single();
+    if (inserted.error) { await admin!.storage.from('wablind-captures').remove([path, previewPath]); dataOrThrow(inserted.data, inserted.error); }
+    res.status(201).json({ id, document: doc, preview });
   });
   app.get('/v1/captures/:id', async (req, res) => {
     const { data, error } = await session(res).db.from('wablind_captures').select('id,document').eq('id', uuid.parse(req.params.id)).single();
@@ -80,14 +114,32 @@ export function createApp(config: Config) {
     const { data, error } = await session(res).db.from('wablind_projects').select('id,owner_id,title,version,updated_at,published_revision_id').order('updated_at', { ascending: false });
     res.json(dataOrThrow(data, error));
   });
-  app.post('/v1/projects', async (req, res) => {
-    const input = z.union([z.object({ document: documentSchema }).strict(), z.object({ captureId: uuid }).strict()]).parse(req.body);
+  app.get('/v1/projects/resolve', async (req, res) => {
+    const input = z.object({ url: z.string().url().max(2048) }).strict().parse({ url: String(req.query.url || '') });
     const { db } = session(res);
-    let document;
-    if ('captureId' in input) { const result = await db.from('wablind_captures').select('document').eq('id', input.captureId).single(); document = documentSchema.parse(dataOrThrow(result.data, result.error).document); }
-    else document = input.document;
-    const created = await rpc(db, 'wablind_create_project', { p_document: document });
+    const result = await db.rpc('wablind_project_by_url', { p_url: input.url });
+    const id = dataOrThrow(result.data, result.error);
+    if (!id) throw new HttpError(404, 'NOT_FOUND', 'Você ainda não importou esta URL nesse projeto.');
+    res.json({ id });
+  });
+  app.post('/v1/projects', async (req, res) => {
+    const input = z.union([z.object({ document: documentSchema }).strict(), z.object({ captureId: uuid, title: z.string().trim().min(1).max(300).optional() }).strict()]).parse(req.body);
+    const { db } = session(res);
+    const created = 'captureId' in input ? await rpc(db, 'wablind_create_from_capture', { p_capture: input.captureId, p_title: input.title || null }) : await rpc(db, 'wablind_create_project', { p_document: input.document });
     res.status(201).json(created);
+  });
+  app.get('/v1/projects/:id/preview', async (req, res) => {
+    const { db } = session(res);
+    const result = await db.from('wablind_projects').select('capture_id').eq('id', uuid.parse(req.params.id)).single();
+    const project = dataOrThrow(result.data, result.error);
+    if (!project.capture_id) throw new HttpError(404, 'PREVIEW_UNAVAILABLE', 'Esta captura não possui prévia visual. A lista de elementos continua disponível.');
+    // Membership was checked by RLS above. Only then read the owner's private asset.
+    const captureResult = await admin!.from('wablind_captures').select('preview_path').eq('id', project.capture_id).single();
+    const capture = dataOrThrow(captureResult.data, captureResult.error);
+    if (!capture.preview_path) throw new HttpError(404, 'PREVIEW_UNAVAILABLE', 'Esta captura não possui prévia visual.');
+    const asset = await admin!.storage.from('wablind-captures').download(capture.preview_path);
+    const blob = dataOrThrow(asset.data, asset.error);
+    res.json(JSON.parse(await blob.text()));
   });
   app.get('/v1/projects/:id', async (req, res) => {
     const { db } = session(res); const id = uuid.parse(req.params.id);
@@ -105,7 +157,14 @@ export function createApp(config: Config) {
   });
   app.post('/v1/projects/:id/publication', async (req, res) => {
     const input = z.object({ expectedVersion: z.number().int().positive(), rightsConfirmed: z.literal(true) }).strict().parse(req.body);
-    res.json(await rpc(session(res).db, 'wablind_publish', { p_id: uuid.parse(req.params.id), p_expected: input.expectedVersion }));
+    const { db } = session(res); const id = uuid.parse(req.params.id);
+    const project = await db.from('wablind_projects').select('current_revision_id').eq('id', id).single();
+    const revision = await db.from('wablind_revisions').select('document').eq('id', dataOrThrow(project.data, project.error).current_revision_id).single();
+    const doc = documentSchema.parse(dataOrThrow(revision.data, revision.error).document);
+    if (doc.schemaVersion === 1 && doc.source.rights === 'review-required') throw new HttpError(422, 'REVIEW_REQUIRED', 'Revise a mediação e registre a autorização de uso antes de publicar esta captura.');
+    const issues = publicationIssues(doc);
+    if (issues.length) throw new HttpError(422, 'REVIEW_REQUIRED', issues.join(' '));
+    res.json(await rpc(db, 'wablind_publish', { p_id: id, p_expected: input.expectedVersion }));
   });
   app.delete('/v1/projects/:id/publication', async (req, res) => res.json(await rpc(session(res).db, 'wablind_unpublish', { p_id: uuid.parse(req.params.id) })));
   app.post('/v1/projects/:id/members', async (req, res) => {

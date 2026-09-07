@@ -1,54 +1,97 @@
 # Implantação e operação
 
-## Estado e requisitos de acesso
+Procedimento para a versão `2.1.0-beta.1`. Este documento não comprova implantação: URLs definitivas, chaves, migrações aplicadas, `/health`, autenticação e fluxo remoto precisam de verificação hospedada. Não foram criadas contas, aceitos contratos ou contratados planos por esta atualização documental.
 
-O código não contém contas, chaves, senhas ou serviços pagos provisionados. Login e aceites de termos/permissões permanecem sob controle da titular. A demonstração no Pages não depende deles. Não anunciar o backend operacional antes de executar os testes hospedados abaixo.
+## 1. Preparação
 
-## 1. Supabase — projeto dedicado
+Confirmar titularidade do repositório e permissão de uso das primeiras fontes. Conferir planos, limites e custos de Supabase e Render antes de provisionar; não há promessa de gratuidade permanente. Não usar banco, bucket ou dados da tese/MADO. Guardar senhas e segredos no ambiente apropriado, nunca em conversa, issue, código, histórico ou variável `VITE_`.
 
-1. Entrar no Supabase e criar um projeto exclusivo para a WABlind. Confirmar plano/custos antes de contratar. A titular define e guarda a senha do banco; não enviar pela conversa nem versionar.
-2. Aplicar `supabase/migrations/202609060001_wablind.sql` pelo SQL Editor ou CLI autenticada. Não usar o banco da tese/MADO.
-3. Confirmar RLS nas cinco tabelas e bucket `wablind-captures` privado. Não criar políticas genéricas de escrita.
-4. Em Auth, desabilitar cadastros públicos; cadastrar a proprietária e mediadores autorizados. Configurar entrega de e-mail adequada ao uso previsto.
-5. O template de Magic Link precisa usar `{{ .Token }}` para envio de código OTP. O frontend usa `verifyOtp` com tipo `email`, sem fluxo de redirecionamento. Definir expiração do código e limites; testar recebimento real antes de abrir o serviço.
-6. Guardar URL e chave publicável como configuração pública. Guardar a chave administrativa exclusivamente no ambiente do Render.
+Usar Node.js 24 e pnpm 11.19.0. Compilar e testar o checkout atual, não reaproveitar uma pasta `dist` antiga:
 
-Referências: https://supabase.com/docs/guides/auth/auth-email-passwordless e https://supabase.com/docs/guides/database/postgres/row-level-security.
+```sh
+corepack enable
+pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm exec playwright install chromium
+pnpm test:e2e
+```
 
-## 2. Render — API
+O build atual foi executado com sucesso após liberar a restrição local de execução das ferramentas. Uma falha de permissão não deve ser contornada publicando um binário antigo. O relatório consolidado fica em [VALIDACAO.md](VALIDACAO.md); testes locais não substituem a aceitação hospedada.
 
-1. Conectar somente `natacsham/wablind` ao Render, conferindo permissões solicitadas e preço do serviço.
-2. Usar o `render.yaml` ou configurar serviço Node 24 com os comandos nele indicados. O plano comercial não foi fixado para evitar contratação implícita.
-3. Preencher `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` e `ALLOWED_ORIGINS=https://natacsham.github.io`.
-4. Deixar `ALLOWED_CAPTURE_HOSTS` vazio até revisar autorização e compatibilidade dos primeiros domínios. A lista usa nomes exatos separados por vírgula; subdomínios e CDNs não são autorizados automaticamente.
-5. Implantar e verificar `/health`. `ready-to-check` significa somente presença da configuração: executar login, gravação e leitura reais para comprovar funcionamento.
+## 2. Supabase: dados e conta inicial
 
-O armazenamento em disco do Render não é utilizado para persistência. Deploy automático do backend fica desabilitado; implantar apenas commits aprovados pela verificação do repositório.
+O Supabase fornece Auth, PostgreSQL e Storage; não hospeda a interface nem executa o capturador Express desta aplicação.
 
-## 3. GitHub Pages
+1. Criar ou selecionar projeto dedicado, mediante autorização da titular e confirmação de custos.
+2. Em banco novo, aplicar `supabase/migrations/202609060001_wablind.sql` e depois `supabase/migrations/202609070002_mediation.sql`. Em instalação existente, conferir migrações já aplicadas; não repetir a primeira indiscriminadamente. Fazer backup antes de atualizar.
+3. Conferir RLS, permissões das funções e bucket `wablind-captures` privado. A segunda migração acrescenta prévia/condições de uso, vínculo de captura e formato 2. Não criar políticas amplas de escrita ou tornar o bucket público.
+4. Desabilitar cadastro público e criar a conta inicial no Supabase Auth, com e-mail válido e senha forte. Confirmar/ativar a conta conforme configuração do projeto.
+5. Registrar o e-mail dessa conta em `PROFESSOR_EMAIL` no servidor. Na interface, o usuário é `professor`; a senha é a da conta, sem valor fixo no código. O servidor usa [signInWithPassword](https://supabase.com/docs/reference/javascript/auth-signinwithpassword). Não configurar template OTP: o formulário atual não usa código por e-mail, Magic Link ou SSO.
+6. Guardar URL e chave pública/publicável para os ambientes; a chave administrativa fica exclusivamente no servidor. Conferir recuperação de conta antes de ampliar o uso.
+
+O banco possui membros, mas o formulário só oferece a conta inicial mapeada. Acesso individual de vários professores requer evolução da autenticação; compartilhar a conta não preserva autoria individual.
+
+## 3. Render: serviço da API
+
+Criar um **Web Service**, runtime Node, a partir do repositório correto. Se o repositório dedicado contém `package.json` na raiz, não acrescentar `wablind/` como root directory. Se for conectado um repositório-pai, configurar a raiz correspondente. Conferir permissões ao conectar o GitHub. O [procedimento oficial para Express](https://render.com/docs/deploy-node-express-app) descreve esse tipo de serviço.
+
+O contrato está em `render.yaml`, com Node 24, deploy automático desabilitado e health check `/health`. Build e inicialização:
+
+```sh
+corepack pnpm install --frozen-lockfile && corepack pnpm typecheck && corepack pnpm exec tsup server/index.ts --format esm --platform node --target node24 --out-dir dist-server
+```
+
+```sh
+node dist-server/index.js
+```
+
+| Variável do servidor | Uso |
+|---|---|
+| `SUPABASE_URL` | URL do projeto dedicado. |
+| `SUPABASE_PUBLISHABLE_KEY` | Chave pública usada nas sessões verificadas. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Segredo administrativo; nunca enviar ao frontend. |
+| `PROFESSOR_EMAIL` | Conta existente associada a `professor`. |
+| `ALLOWED_ORIGINS` | Origens exatas permitidas ao navegador. No Pages previsto: `https://natacsham.github.io`, sem caminho. |
+| `ALLOWED_CAPTURE_HOSTS` | Hosts exatos separados por vírgula; vazio desativa captura externa. |
+| `NODE_VERSION` | `24`, conforme blueprint. |
+| `PORT` | Porta do ambiente; o serviço já a lê e escuta em `0.0.0.0`. |
+
+O material próprio `public/examples/comparacao.html` foi preparado como fonte autorizada para captura, edição e publicação nos testes WABlind. Após confirmar sua publicação e escopo de permissão, o endereço previsto é `https://natacsham.github.io/wablind/examples/comparacao.html`. Só então considerar habilitar `natacsham.github.io`. A lista opera por host, não por caminho: essa habilitação não restringe automaticamente a captura ao exemplo nem autoriza outras páginas do domínio. Rever o alcance antes de liberar. Subdomínios, redirecionamentos e CDNs também exigem habilitação explícita.
+
+Depois de configurar, verificar `/health`. `ready-to-check` significa apenas que URL/chaves básicas estão presentes: não confirma `PROFESSOR_EMAIL`, migrações, banco ou gravação. Testar login e operação real antes de declarar disponibilidade. O disco do Render não guarda a persistência da aplicação.
+
+## 4. GitHub Pages: interface estática
 
 1. Em Settings → Pages, selecionar GitHub Actions.
-2. A demonstração é compilada sem variáveis de serviço. Para ativar o serviço, definir nas Repository Variables `VITE_API_URL`, `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`. Nunca cadastrar uma chave administrativa com prefixo `VITE_`.
-3. Executar o workflow Verify and publish WABlind. O deploy depende de tipos, testes, auditoria de dependências e testes no build de produção.
-4. Confirmar publicação em `https://natacsham.github.io/wablind/` e links por fragmento. Caminho-base configurado como `/wablind/`.
+2. Conferir o workflow `Verify and publish WABlind`. Ele verifica tipos, arquivos de release, testes, auditoria de dependências, build e fluxos no build de produção. Depois recompila a interface com configuração pública e envia somente `dist`.
+3. Para demonstração independente, manter variáveis de serviço vazias. Para ligar à API implantada, definir Repository Variables `VITE_API_URL` (base da API, sem `/v1`), `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY`. Não usar segredos administrativos.
+4. O caminho-base do workflow é `/wablind/`; a navegação usa fragmentos. Confirmar repositório/alvo antes de assumir esse caminho.
+5. Publicar um commit aprovado pelo pipeline e conferir a URL retornada pelo deploy. `https://natacsham.github.io/wablind/` é destino previsto, não confirmação de que esta versão já está nele.
 
-## 4. Aceitação hospedada
+O artefato estático segue a [documentação do GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). A recompilação com endereços reais requer teste final próprio; o teste local sem serviço não valida CORS ou autenticação hospedados.
 
-- Abrir os três exemplos e executar o fluxo sem cadastro.
-- Entrar por OTP; criar, salvar e reabrir um projeto privado.
-- Usar duas contas: a segunda não acessa rascunhos antes do convite e não publica após o convite.
-- Simular duas revisões: a segunda gravação antiga recebe conflito, mantendo o rascunho local.
-- Importar uma página autorizada; revisar preservação do conteúdo e imagens.
-- Publicar, editar sem alterar o que está público e retirar publicação.
-- Confirmar exportação e reimportação, subcaminho, foco, reflow e leitores de tela.
-- Conferir HTTPS, CORS e ausência de segredos nos arquivos compilados.
+## 5. Aceitação hospedada pendente
 
-## 5. Backup, reversão e manutenção
+- Abrir os três exemplos, editar, salvar e preparar leitura local sem serviço. Confirmar que isso não aparece como publicação on-line.
+- Entrar com a conta inicial real; testar senha errada, limite, expiração, saída e recuperação do rascunho. Não registrar tokens/senha nas evidências.
+- Abrir a URL demonstrativa autorizada; conferir texto, tabela, unidades, ordem e prévia aproximada. Testar domínio proibido, destino privado e falha da fonte.
+- Classificar elementos, justificar omissões, escrever síntese vinculada e criar representação textual/tabular com função e condição. Salvar e reabrir sem perda.
+- Criar duas atividades para a URL e verificar a escolha na busca pública. Rascunhos não devem aparecer.
+- Publicar uma revisão, editar sem alterar a leitura pública e retirar publicação. Conferir por resposta da API que o texto original omitido não é entregue; razões e contribuições mantidas visíveis também precisam de revisão.
+- Conferir autorização com segunda identidade controlada, por API/banco enquanto não houver login individual na interface: acesso negado antes do convite, edição após convite, publicação exclusiva da proprietária.
+- Simular gravações concorrentes; a versão antiga recebe conflito sem sobrescrever a nova. Preservar e comparar o rascunho.
+- Exportar/reimportar formato 2; conferir leitura de formato 1 e ausência de alterações silenciosas na fonte.
+- Testar HTTPS, CORS, subcaminho, atualização de links, foco, teclado, ampliação/reflow e tecnologias assistivas. Registrar combinações realmente utilizadas; automação não declara conformidade.
+- Revisar arquivos publicados e histórico para segredos, dados pessoais, PDFs/legado e evidências acadêmicas que devem ficar fora do repositório.
 
-Antes de alterações de banco: realizar backup PostgreSQL e do bucket privado conforme o plano contratado; restaurar em projeto de homologação separado e testar documentos, membros e revisões. Esse ensaio não foi substituído pelo teste em memória.
+## 6. Backup, reversão e manutenção
 
-Para reverter frontend, reexecutar a publicação do último commit aprovado. Para API, selecionar o deploy anterior no Render. Migrações futuras devem ser aditivas e compatíveis com ambas as versões durante a transição; não reverter o banco apagando dados.
+Antes de uso externo amplo, definir retenção e remoção com a titular. Capturas e projetos não são apagados automaticamente. Retirar publicação não recolhe exportações já baixadas nem elimina o projeto privado.
 
-Não coletar conteúdo ou tokens nos logs. A API registra apenas a classe do erro inesperado. Verificar status do serviço e consumo no painel, revisar dependências a cada release e registrar incidentes sem dados pessoais. Não há automação recorrente criada por esta entrega.
+Fazer backup do PostgreSQL e do bucket privado conforme o serviço contratado. Testar restauração em ambiente separado, incluindo capturas, prévias, revisões e permissões. Testes em memória não comprovam restauração do Supabase.
 
-Capturas e projetos não são apagados automaticamente. Antes de habilitar uso externo amplo, definir retenção/remoção com a titular e documentar a política. Retirar publicação não apaga cópias já exportadas por leitores.
+Frontend: publicar novamente o commit aprovado compatível. API: selecionar implantação anterior aprovada no Render. A migração 002 é aditiva e preserva revisões históricas, mas o código anterior pode não entender novos documentos: não reverter para uma versão que só lê formato 1 após criar formato 2. Testar compatibilidade antes da reversão; não apagar dados para “voltar” a migração.
+
+Registrar falhas sem corpos de páginas, credenciais ou tokens. Rever consumo, dependências, permissões e logs a cada release. Esta entrega não criou monitoramento recorrente nem contratou operação contínua.

@@ -4,9 +4,13 @@
 
 Atualizar e reativar a WABlind para o portfólio. Interface no Pages e serviço externo. Sem alteração da tese, integração MADO, IA generativa, edição simultânea ou novo estudo obrigatório.
 
+Escopo consolidado em 7 de setembro de 2026: a edição/classificação de elementos permanece central. O formato 2 acrescenta função na atividade, tratamentos combináveis, justificativa, fonte/direitos, representações relacionadas e síntese autoral opcional. A página pública explica a evolução; síntese para a tese e teste técnico sintético do Instrumento MADO ficam em `outputs/tese`, fora deste repositório. O teste isolado não é integração operacional nem avaliação com participante.
+
+Consulte [MATRIZ-HISTORICA.md](MATRIZ-HISTORICA.md) para distinguir exemplos comprovados de marcadores históricos, sugestões dos participantes e categorias introduzidas nesta reconstrução. O catálogo atual não é anunciado como reprodução literal das tags do artigo.
+
 | Origem | Requisito | Implementação |
 |---|---|---|
-| Proposta do artigo de 2018 | Apoio técnico mais mediação humana | Captura segura + editor de marcadores |
+| Proposta do artigo de 2018 | Apoio técnico mais mediação humana | Captura automática por URL + editor de marcadores |
 | Seleção confundida com conclusão | Distinguir selecionar, aplicar e salvar | Estado selecionado, rascunho e revisão |
 | Dificuldade de escolher marcadores | Linguagem e exemplos | Ajuda por categoria e prévia |
 | Dificuldade de acompanhar contribuições | Revisar e corrigir | Lista, edição, exclusão, desfazer e histórico |
@@ -16,7 +20,7 @@ Atualizar e reativar a WABlind para o portfólio. Interface no Pages e serviço 
 
 ## Inventário histórico examinado no planejamento
 
-- `WABlind-master.zip`: protótipo Node/Express/EJS; importação e edição com partes incompletas, dependências e autenticação antigas.
+- `WABlind-master.zip`: protótipo Node/Express/EJS; importação por URL e edição com partes incompletas, dependências e autenticação antigas.
 - `wablind.zip`: árvores PHP/CodeIgniter e WABlind original; regras heurísticas, painéis experimentais e metadados SVN.
 - `wablind.txt` e `wablind2.txt`: notas de funcionalidades, não prova de implementação.
 - Artigo SBIE 2018: comunicabilidade com professores; não equivale a avaliação de aprendizagem de estudantes cegos.

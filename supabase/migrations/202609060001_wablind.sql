@@ -170,7 +170,7 @@ end; $$;
 revoke all on function public.wablind_can_read(uuid) from public,anon;
 grant execute on function public.wablind_can_read(uuid) to authenticated;
 revoke all on function public.wablind_checked_document(jsonb,jsonb) from public,anon,authenticated;
-revoke all on function public.wablind_create_project(jsonb),public.wablind_save_revision(uuid,jsonb,integer),public.wablind_publish(uuid,integer),public.wablind_unpublish(uuid),public.wablind_add_member(uuid,text),public.wablind_remove_member(uuid,uuid),public.wablind_capture_quota() from public,anon;
+revoke all on function public.wablind_create_project(jsonb),public.wablind_save_revision(uuid,jsonb,integer),public.wablind_publish(uuid,integer),public.wablind_unpublish(uuid),public.wablind_add_member(uuid,text),public.wablind_remove_member(uuid,uuid),public.wablind_capture_quota() from public,anon,authenticated;
 grant execute on function public.wablind_create_project(jsonb),public.wablind_save_revision(uuid,jsonb,integer),public.wablind_publish(uuid,integer),public.wablind_unpublish(uuid),public.wablind_add_member(uuid,text),public.wablind_remove_member(uuid,uuid),public.wablind_capture_quota() to authenticated;
 revoke all on function public.wablind_publication(uuid) from public;
 grant execute on function public.wablind_publication(uuid) to anon,authenticated;
@@ -179,5 +179,60 @@ insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
  values('wablind-captures','wablind-captures',false,5242880,array['application/json']) on conflict(id) do nothing;
 create policy wablind_capture_files_read on storage.objects for select to authenticated
  using(bucket_id='wablind-captures' and (storage.foldername(name))[1]=auth.uid()::text);
+
+create or replace function public.wablind_normalize_url(p_url text) returns text
+language plpgsql immutable set search_path = '' as $$
+begin
+  if p_url is null then return null; end if;
+  return regexp_replace(regexp_replace(lower(trim(p_url)), '#.*$', ''), '/+$', '');
+end; $$;
+
+create or replace function public.wablind_search_publications(p_query text, p_limit integer default 8)
+returns table(id uuid, title text, source_url text, updated_at timestamptz)
+language sql stable set search_path = '' as $$
+  with normalized as (select trim(lower(coalesce(p_query,''))) as query)
+  select p.id,
+         coalesce(r.document->>'title','Página sem título'),
+         r.document->'source'->>'url',
+         p.updated_at
+  from public.wablind_projects p
+  join public.wablind_revisions r on r.id = p.published_revision_id and r.project_id = p.id
+  where p.published_revision_id is not null
+    and (
+      (select query from normalized) = ''
+      or position((select query from normalized) in lower(r.document->>'title')) > 0
+      or position((select query from normalized) in lower(r.document->'source'->>'url')) > 0
+    )
+  order by p.updated_at desc
+  limit greatest(1, least(20, coalesce(p_limit, 8)))
+$$;
+
+create or replace function public.wablind_publication_by_url(p_url text) returns uuid
+language sql stable set search_path = '' as $$
+  select p.id
+  from public.wablind_projects p
+  join public.wablind_revisions r on r.id = p.published_revision_id and r.project_id = p.id
+  where public.wablind_normalize_url(r.document->'source'->>'url') = public.wablind_normalize_url(p_url)
+  order by p.updated_at desc
+  limit 1
+$$;
+
+create or replace function public.wablind_project_by_url(p_url text) returns uuid
+language plpgsql stable set search_path = '' as $$
+declare v_id uuid;
+begin
+  select p.id into v_id
+  from public.wablind_projects p
+  join public.wablind_revisions r on r.id = p.current_revision_id and r.project_id = p.id
+  where public.wablind_normalize_url(r.document->'source'->>'url') = public.wablind_normalize_url(p_url)
+    and public.wablind_can_read(p.id)
+  order by p.updated_at desc
+  limit 1;
+  return v_id;
+end; $$;
+
+revoke all on function public.wablind_normalize_url(text), public.wablind_search_publications(text,integer), public.wablind_publication_by_url(text), public.wablind_project_by_url(text) from public,anon,authenticated;
+grant execute on function public.wablind_normalize_url(text), public.wablind_search_publications(text,integer), public.wablind_publication_by_url(text) to anon,authenticated;
+grant execute on function public.wablind_project_by_url(text) to authenticated;
 -- No client upload policy. The API writes only after authentication and capture validation.
 commit;

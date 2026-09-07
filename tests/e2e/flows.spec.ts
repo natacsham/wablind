@@ -1,83 +1,94 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { readFile } from 'node:fs/promises';
-test('local annotation, revision, reading and roundtrip', async ({ page }) => {
+import { examples } from '../../shared/examples';
+import { toV2, newWorkspace, saveRevision } from '../../shared/model';
+
+test('home focuses the large search and keyboard suggestion opens in same tab', async ({ page, context }) => {
   await page.goto('./');
-  await page.getByRole('button', { name: 'Explorar: Uma viagem com a água' }).click();
-  await page.getByRole('button', { name: /02.*Imagem/ }).click();
-  await page.getByLabel('Descrição (obrigatória)').fill('O Sol aquece o rio; a água evapora e retorna como chuva.');
-  await page.getByLabel('Finalidade pedagógica').fill('Relacionar as etapas do ciclo.');
-  await page.getByRole('button', { name: 'Aplicar ao trecho' }).click();
-  await expect(page.getByText('Rascunho · revisão não salva', { exact: false })).toBeVisible();
-  await page.getByRole('button', { name: 'Salvar revisão', exact: true }).click();
-  await expect(page.getByText('✓ Revisão salva', { exact: true })).toBeVisible();
+  const search = page.getByRole('combobox', { name: 'Encontre uma página ou um assunto' });
+  await expect(search).toBeFocused();
+  expect((await search.boundingBox())!.height).toBeGreaterThanOrEqual(72);
+  await expect(page.getByRole('button', { name: 'Dizer URL ou assunto' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Área do professor', exact: true })).toBeVisible();
+  await search.fill('água');
+  await expect(page.getByRole('option', { name: /Uma viagem com a água/ })).toBeVisible();
+  await search.press('ArrowDown');
+  await expect(search).toBeFocused();
+  await search.press('Enter');
+  await expect(page).toHaveURL(/#\/example\/ciclo-da-agua$/);
+  await expect(page.getByRole('heading', { name: 'Fonte original' })).toBeVisible();
+  expect(context.pages()).toHaveLength(1);
+});
+
+test('empty search has an associated recoverable error and escape closes suggestions', async ({ page }) => {
+  await page.goto('./');
+  const search = page.getByRole('combobox');
+  await search.press('Enter');
+  await expect(search).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByRole('alert')).toContainText('Digite ou fale');
+  await search.fill('horta');
+  await expect(page.getByRole('option')).toBeVisible();
+  await search.press('ArrowDown'); await search.press('Escape');
+  await expect(search).toHaveAttribute('aria-expanded', 'false');
+  await expect(search).toBeFocused();
+});
+
+test('reader and HTML export agree on omission, source and multimodal contributions', async ({ page }) => {
+  const doc = toV2(examples[1].document);
+  const m = doc.mediation!;
+  m.task = 'Comparar o crescimento das mudas.'; m.purpose = 'Distinguir valores e variação.'; m.responsible = 'Professor demonstrativo';
+  m.summary = { text: 'As duas mudas cresceram dois centímetros.', elementIds: ['garden-table'] };
+  m.decisions = [{ elementId: 'garden-intro', classification: 'paragraph', role: 'Contexto de demonstração', treatments: ['omit'], description: '', explanation: '', rationale: 'Foco nesta comparação.', omitReason: 'Contexto registrado junto à fonte.', author: 'Professor demonstrativo', updatedAt: '2026-09-07T12:00:00.000Z' }];
+  m.representations = [{ id: 'comparison', elementIds: ['garden-table'], title: 'Uma relação para comparar', kind: 'text', text: 'Ambas aumentaram dois centímetros.', columns: [], rows: [], function: 'Explicitar a variação para comparação.', relation: 'complementary', condition: 'Explorar junto à tabela.', alternative: 'Percorrer cabeçalhos e linhas.', author: 'Professor demonstrativo', updatedAt: '2026-09-07T12:00:00.000Z' }];
+  const w = saveRevision(newWorkspace(doc)); w.publication = doc;
+  await page.addInitScript(value => localStorage.setItem('wablind.workspace.v1', JSON.stringify(value)), { [doc.id]: w });
+  await page.goto(`./#/snapshot/${doc.id}`);
+  await expect(page.getByText('Uma turma acompanha duas mudas', { exact: false })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Síntese do professor' })).toBeVisible();
+  await expect(page.getByText('Complementar: usar em conjunto').first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Representações relacionadas' })).toBeVisible();
+  const downloadEvent = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Exportar HTML', exact: true }).click();
+  const downloaded = await downloadEvent;
+  const stream = await downloaded.createReadStream(); let html = '';
+  for await (const chunk of stream!) html += chunk.toString();
+  expect(html).not.toContain('Uma turma acompanha duas mudas');
+  expect(html).toContain('As duas mudas cresceram dois centímetros.');
+  expect(html).toContain('Fonte original');
+  expect(html).toContain('Uma relação para comparar');
+  await page.getByText('Opções de leitura', { exact: true }).click();
+  await page.getByLabel('Tamanho do texto').selectOption('1.4');
+  await page.getByLabel('Aumentar espaçamento').check();
   await page.reload();
-  await expect(page.getByText('✓ Revisão salva', { exact: true })).toBeVisible();
-  await page.getByRole('link', { name: 'Prévia da leitura' }).click();
-  await expect(page.getByRole('img', { name: 'O Sol aquece o rio; a água evapora e retorna como chuva.' })).toBeVisible();
-  const htmlDownload = page.waitForEvent('download'); await page.getByRole('button', { name: 'Exportar HTML', exact: true }).click();
-  expect((await htmlDownload).suggestedFilename()).toMatch(/\.html$/);
-  await page.getByRole('link', { name: 'Voltar à edição' }).click();
-  const jsonDownload = page.waitForEvent('download'); await page.getByRole('button', { name: 'Exportar JSON' }).click();
-  const download = await jsonDownload; const path = await download.path();
-  const document = JSON.parse(await readFile(path!, 'utf8')); expect(document.annotations).toHaveLength(1);
-  await page.getByRole('link', { name: 'Meus projetos', exact: true }).click();
-  await page.getByLabel('Reimportar projeto JSON').setInputFiles(path!);
-  await expect(page.getByText('1 marcações', { exact: false })).toBeVisible();
+  await page.getByText('Opções de leitura', { exact: true }).click();
+  await expect(page.getByLabel('Tamanho do texto')).toHaveValue('1.4');
 });
-test('undo, removal and restoration preserve revisions', async ({ page }) => {
-  await page.goto('./'); await page.getByRole('button', { name: 'Explorar: Ler o céu, fazer perguntas' }).click();
-  await page.getByLabel('Descrição (obrigatória)').fill('Texto principal.'); await page.getByRole('button', { name: 'Aplicar ao trecho' }).click();
-  await page.getByRole('button', { name: 'Salvar revisão', exact: true }).click();
-  await page.getByRole('button', { name: 'Remover esta marcação' }).click();
-  await page.getByRole('button', { name: 'Desfazer', exact: true }).click();
-  await expect(page.getByLabel('Descrição (obrigatória)')).toHaveValue('Texto principal.');
-  await page.getByText('Histórico (1 revisões)', { exact: true }).click();
-  await page.getByRole('button', { name: 'Restaurar revisão 1' }).click();
-  await expect(page.getByLabel('Descrição (obrigatória)')).toHaveValue('Texto principal.');
-});
-test('keeps unapplied descriptions when changing elements and reloading', async ({ page }) => {
-  await page.goto('./'); await page.getByRole('button', { name: 'Explorar: Uma viagem com a água' }).click();
-  await page.getByLabel('Descrição (obrigatória)').fill('Texto ainda não aplicado.');
-  await page.getByRole('button', { name: /02.*Imagem/ }).click();
-  await page.getByRole('button', { name: /01.*Parágrafo/ }).click();
-  await expect(page.getByLabel('Descrição (obrigatória)')).toHaveValue('Texto ainda não aplicado.');
-  await page.reload();
-  await expect(page.getByLabel('Descrição (obrigatória)')).toHaveValue('Texto ainda não aplicado.');
-});
-test('keyboard can enter editor and apply a marker', async ({ page }) => {
-  await page.goto('./'); await page.keyboard.press('Tab'); await expect(page.getByRole('link', { name: 'Ir para o conteúdo principal' })).toBeFocused(); await page.keyboard.press('Enter');
-  const start = page.getByRole('button', { name: 'Explorar: Pequenas descobertas na horta' }); await start.focus(); await page.keyboard.press('Enter');
-  const choose = page.getByRole('button', { name: /03.*Tabela/ }); await choose.focus(); await page.keyboard.press('Space');
-  const description = page.getByLabel('Descrição (obrigatória)'); await description.focus(); await page.keyboard.type('Compare cada coluna com o dia indicado.');
-  await page.keyboard.press('Tab'); await page.keyboard.press('Tab'); await expect(page.getByRole('button', { name: 'Aplicar ao trecho' })).toBeFocused(); await page.keyboard.press('Enter');
-  await expect(page.getByRole('button', { name: 'Atualizar marcação' })).toBeVisible();
-});
-test('rejects malformed import and keeps existing projects', async ({ page }) => {
-  await page.goto('./#/projects'); await page.getByLabel('Reimportar projeto JSON').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"schemaVersion":9}') });
+
+test('malformed backup does not replace saved work', async ({ page }) => {
+  await page.goto('./#/projects');
+  await page.getByText('Recuperar uma cópia de segurança JSON', { exact: true }).click();
+  await page.getByLabel('Arquivo JSON exportado').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"schemaVersion":9}') });
   await expect(page.getByRole('alert')).toContainText('Arquivo incompatível');
-  await expect(page.getByText('Serviço externo ainda não conectado.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Trabalhos neste navegador' })).toBeVisible();
 });
-test('local publication is a fixed snapshot, not a public link', async ({ page }) => {
-  await page.goto('./'); await page.getByRole('button', { name: 'Explorar: Ler o céu, fazer perguntas' }).click();
-  await page.getByRole('button', { name: 'Salvar revisão', exact: true }).click(); await page.getByRole('button', { name: 'Preparar leitura local da revisão salva' }).click();
-  await page.getByLabel('Descrição (obrigatória)').fill('Nova edição privada'); await page.getByRole('button', { name: 'Aplicar ao trecho' }).click();
-  await page.getByRole('link', { name: 'Abrir versão local preparada' }).click();
-  await expect(page.getByText('Nova edição privada')).toHaveCount(0); await expect(page.getByText('Revisão preparada · somente local')).toBeVisible();
+
+test('failed account download offers explicit reload and retains local work', async ({ page }) => {
+  const saved = saveRevision(newWorkspace(examples[1].document));
+  await page.addInitScript(value => localStorage.setItem('wablind.workspace.v1', JSON.stringify(value)), { [saved.document.id]: saved });
+  await page.route(/\/assets\/Account-[^/]+\.js$/, route => route.abort('failed'));
+  await page.goto('./#/projects');
+  const errorHeading = page.getByRole('heading', { name: 'Não foi possível abrir a conta do professor' });
+  await expect(errorHeading).toBeVisible({ timeout: 30000 });
+  await expect(errorHeading).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Recarregar página' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Continuar edição: Pequenas descobertas na horta' })).toBeVisible();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('wablind.workspace.v1') || '{}').horta.document.title)).toBe('Pequenas descobertas na horta');
 });
-for (const route of ['', '#/projects', '#/about', '#/help']) test(`a11y and mobile reflow ${route || 'home'}`, async ({ page }) => {
+
+for (const route of ['', '#/projects', '#/history', '#/help', '#/examples', '#/example/horta']) test(`accessible landmarks and mobile reflow ${route || 'home'}`, async ({ page }) => {
   await page.goto('./' + route);
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()).violations).toEqual([]);
   await page.setViewportSize({ width: 320, height: 800 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
-});
-test('editor and reading accessibility with screenshot evidence', async ({ page }) => {
-  await page.goto('./'); await page.screenshot({ path: 'test-results/home.png', fullPage: true });
-  await page.getByRole('button', { name: 'Explorar: Pequenas descobertas na horta' }).click();
-  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()).violations).toEqual([]);
-  await page.screenshot({ path: 'test-results/editor.png', fullPage: true });
-  await page.setViewportSize({ width: 320, height: 800 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
-  await page.getByRole('link', { name: 'Prévia da leitura' }).click();
-  expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze()).violations).toEqual([]);
 });

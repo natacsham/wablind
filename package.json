@@ -1,6 +1,6 @@
 {
   "name": "wablind",
-  "version": "2.0.0-beta.1",
+  "version": "2.1.0-beta.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.19.0",
@@ -22,6 +22,7 @@
     "@supabase/supabase-js": "^2.57.0",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
+    "css-tree": "^3.2.1",
     "domhandler": "^5.0.3",
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
@@ -36,6 +37,7 @@
     "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.55.0",
     "@types/cors": "^2.8.19",
+    "@types/css-tree": "^3.2.0",
     "@types/express": "^5.0.3",
     "@types/node": "^24.3.0",
     "@types/react": "^19.1.12",
