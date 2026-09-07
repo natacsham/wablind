@@ -76,6 +76,7 @@ main > .error { margin: 1rem max(4vw,1rem); }
 .logo-large { font-size: clamp(3rem,7vw,4.5rem); gap: 1rem; }
 .logo-large svg { width: clamp(54px,8vw,76px); height: auto; }
 .home-subtitle { font-size: 1.05rem; color: #4c5272; margin: 1.1rem 0 2rem; }
+.home-brief { color: #464d67; margin: 0 auto 1.5rem; max-width: 760px; }
 .home-form { width: 100%; text-align: left; }
 .search-label { font-size: 1rem; width: min(100%,760px); margin: 0 auto .7rem; padding-inline-start: .5rem; }
 .search-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: .85rem; align-items: stretch; }

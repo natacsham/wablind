@@ -36,7 +36,7 @@ export function createApp(config: Config) {
   app.use(rateLimit({ windowMs: 60000, limit: 120, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: { code: 'RATE_LIMIT', message: 'Muitas solicitações. Aguarde um minuto antes de tentar novamente.' } } }));
   const configured = Boolean(config.supabaseUrl && config.publicKey && config.serviceKey);
   const admin = configured ? createClient(config.supabaseUrl, config.serviceKey, { auth: { persistSession: false, autoRefreshToken: false } }) : null;
-  app.get('/health', (_req, res) => res.json({ status: configured ? 'ready-to-check' : 'not-configured', version: VERSION }));
+  app.get('/health', (_req, res) => res.json({ status: configured ? 'ready-to-check' : 'not-configured', version: VERSION, configured, origins: config.origins, hosts: config.hosts, service: Boolean(config.supabaseUrl && config.publicKey && config.serviceKey), professorEmailSet: Boolean(config.professorEmail) }));
   app.use('/v1', (_req, _res, next) => configured ? next() : next(new HttpError(503, 'NOT_CONFIGURED', 'O serviço externo ainda não foi configurado. Use a demonstração local.')));
   const authenticate = async (req: Request, res: Response, next: NextFunction) => {
     try {

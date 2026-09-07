@@ -67,7 +67,7 @@ export default function Account({ open, announce }: { open: (w: Workspace) => vo
         <form className="capture-form" aria-labelledby="capture-title" onSubmit={event => { event.preventDefault(); void run(capture); }}>
           <h2 id="capture-title">Prepare uma página para sua atividade</h2>
           <label htmlFor="source-url">URL da página</label><input id="source-url" type="text" inputMode="url" autoCapitalize="none" required value={url} onChange={event => setUrl(event.target.value)} placeholder="https://exemplo.org/pagina" aria-describedby="url-help" />
-          <p className="field-help" id="url-help">A página será carregada automaticamente. Cada abertura cria uma nova atividade; retome trabalhos existentes na lista abaixo.</p>
+          <p className="field-help" id="url-help">A WABlind baixa a página informada e abre a estrutura para você editar manualmente. Cada abertura cria uma nova atividade; retome trabalhos existentes na lista abaixo.</p>
           <label htmlFor="resource-title">Título da atividade (opcional)</label><input id="resource-title" maxLength={300} value={title} onChange={event => setTitle(event.target.value)} placeholder="Ex.: Comparar o consumo de água" />
           <fieldset><legend>Condição de uso da fonte</legend>
             <label htmlFor="rights-basis">Como este conteúdo pode ser utilizado?</label><select id="rights-basis" value={rightsBasis} onChange={event => setRightsBasis(event.target.value as Mediation['rightsBasis'])} required><option value="pending">Selecione a condição</option><option value="own">Conteúdo próprio</option><option value="licensed">Licença permite este uso</option><option value="permission">Autorização do titular</option></select>

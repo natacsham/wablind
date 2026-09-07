@@ -108,16 +108,17 @@ export function Home({ library }: { library: Record<string, Workspace> }) {
     <div className="search-center">
       <h1 id="home-title"><Logo large /></h1>
       <p className="home-subtitle">Mediação multimodal de conteúdo web</p>
+      <p className="home-brief">Você informa a página. A WABlind baixa o conteúdo, organiza os blocos e você prepara a leitura com mediações.</p>
       <form className="home-form" role="search" aria-label="Buscar recursos preparados" onSubmit={event => { void submit(event); }}>
-        <label htmlFor="student-url" className="search-label">Encontre uma página ou um assunto</label>
+        <label htmlFor="student-url" className="search-label">Digite a página que você quer abrir</label>
         <div className="search-row">
           <div className="search-input-wrap">
-            <input id="student-url" ref={input} type="text" role="combobox" autoComplete="off" autoCapitalize="none" spellCheck={false} enterKeyHint="search" placeholder="Digite uma URL ou um assunto" value={query} aria-autocomplete="list" aria-expanded={expanded && results.length > 0} aria-controls="search-suggestions" aria-activedescendant={expanded && active >= 0 ? `search-option-${active}` : undefined} aria-describedby={`search-help${error ? ' search-error' : ''}`} aria-invalid={Boolean(error)} onKeyDown={keys} onChange={event => { generation.current++; setQuery(event.target.value); setActive(-1); setError(''); setVoiceMessage(''); setBusy(false); }} onBlur={event => { if (!event.currentTarget.form?.contains(event.relatedTarget as Node | null)) setExpanded(false); }} />
+            <input id="student-url" ref={input} type="text" role="combobox" autoComplete="off" autoCapitalize="none" spellCheck={false} enterKeyHint="search" placeholder="Cole ou fale a URL da página" value={query} aria-autocomplete="list" aria-expanded={expanded && results.length > 0} aria-controls="search-suggestions" aria-activedescendant={expanded && active >= 0 ? `search-option-${active}` : undefined} aria-describedby={`search-help${error ? ' search-error' : ''}`} aria-invalid={Boolean(error)} onKeyDown={keys} onChange={event => { generation.current++; setQuery(event.target.value); setActive(-1); setError(''); setVoiceMessage(''); setBusy(false); }} onBlur={event => { if (!event.currentTarget.form?.contains(event.relatedTarget as Node | null)) setExpanded(false); }} />
             <button type="button" className={`microphone${listening ? ' microphone-active' : ''}`} aria-label={listening ? 'Parar microfone' : 'Dizer URL ou assunto'} aria-pressed={listening} onClick={toggleVoice} disabled={!voiceAvailable} aria-describedby={!voiceAvailable ? 'voice-unavailable' : undefined} title={voiceAvailable ? 'Dizer URL ou assunto' : 'Entrada por voz indisponível neste navegador'}><MicrophoneIcon /></button>
           </div>
-          <button className="primary search-submit" disabled={busy}>{busy ? 'Buscando…' : 'Buscar'}</button>
+          <button className="primary search-submit" disabled={busy}>{busy ? 'Buscando…' : 'Abrir'}</button>
         </div>
-        <p id="search-help" className="field-help">Recursos preparados por professores. Use as setas para escolher uma sugestão.</p>
+        <p id="search-help" className="field-help">Se essa página já tiver uma leitura preparada, ela aparece aqui. Caso contrário, use materiais demonstrativos.</p>
         {!voiceAvailable && <p id="voice-unavailable" className="voice-unavailable">Voz indisponível neste navegador. A busca por texto continua disponível.</p>}
         {error && <p id="search-error" role="alert" className="error">{error}</p>}
         <p role="status" className="search-message">{voiceMessage || message}</p>
