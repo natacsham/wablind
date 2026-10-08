@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { searchPages, type CatalogPage } from "./model";
+import { Icon } from "./Icon";
+import { useVoiceSearch } from "./useVoiceSearch";
 
 export function Search({ pages }: { pages: CatalogPage[] }) {
   const [query, setQuery] = useState("");
@@ -7,6 +9,12 @@ export function Search({ pages }: { pages: CatalogPage[] }) {
   const [active, setActive] = useState(-1);
   const [message, setMessage] = useState("");
   const input = useRef<HTMLInputElement>(null);
+  const voice = useVoiceSearch((text) => {
+    setQuery(text);
+    setActive(-1);
+    setExpanded(true);
+    requestAnimationFrame(() => input.current?.focus());
+  });
   const results = searchPages(pages, query);
   const open = expanded && query.trim().length > 0 && results.length > 0;
   useEffect(() => {
@@ -22,10 +30,12 @@ export function Search({ pages }: { pages: CatalogPage[] }) {
     return () => clearTimeout(timer);
   }, [query, results.length]);
   function navigate(id: string) {
+    voice.cancel();
     location.hash = `/pagina/${id}`;
   }
   function submit(event: FormEvent) {
     event.preventDefault();
+    voice.cancel();
     if (!query.trim()) {
       setMessage("Digite o nome ou o endereço de uma página do catálogo.");
       input.current?.focus();
@@ -55,23 +65,7 @@ export function Search({ pages }: { pages: CatalogPage[] }) {
           <label htmlFor="page-search">Nome ou endereço da página</label>
           <div className="search-line">
             <div className="search-input-shell">
-              <svg
-                viewBox="0 0 24 24"
-                width="22"
-                height="22"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <circle
-                  cx="10"
-                  cy="10"
-                  r="6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-                <path d="m15 15 5 5" stroke="currentColor" strokeWidth="2" />
-              </svg>
+              <Icon name="search" />
               <input
                 ref={input}
                 id="page-search"
@@ -87,9 +81,11 @@ export function Search({ pages }: { pages: CatalogPage[] }) {
                 }
                 aria-describedby="search-hint"
                 autoComplete="off"
+                maxLength={200}
                 value={query}
                 placeholder="Ex.: água, biblioteca ou aprender.example…"
                 onChange={(event) => {
+                  voice.cancel();
                   setQuery(event.target.value);
                   setActive(-1);
                   setExpanded(true);
@@ -131,6 +127,20 @@ export function Search({ pages }: { pages: CatalogPage[] }) {
                 }}
               />
             </div>
+            <button
+              className={`voice-button${voice.busy ? " is-listening" : ""}`}
+              type="button"
+              onClick={voice.busy ? voice.stop : voice.start}
+              disabled={!voice.supported || voice.phase === "stopping"}
+              aria-describedby="voice-note"
+            >
+              <Icon name={voice.busy ? "stop" : "mic"} />
+              {voice.phase === "stopping"
+                ? "Encerrando"
+                : voice.busy
+                  ? "Parar"
+                  : "Falar"}
+            </button>
             <button className="primary" type="submit">
               Buscar
             </button>
@@ -157,10 +167,22 @@ export function Search({ pages }: { pages: CatalogPage[] }) {
             ))}
           </ul>
           <p id="search-hint" className="hint">
-            Digite para ver as páginas disponíveis nesta demonstração.
+            Digite{voice.supported ? " ou fale" : ""} o nome para ver as páginas
+            disponíveis.
           </p>
+          <p id="voice-note" className="voice-note">
+            {voice.supported
+              ? "Ao usar o microfone, o navegador pode enviar áudio ao serviço de reconhecimento. O ELIA não grava o áudio."
+              : "Busca por voz indisponível neste navegador. Você pode digitar normalmente."}
+          </p>
+          <p className="voice-status" role="status">
+            {voice.message}
+          </p>
+          {voice.provisional && (
+            <p className="voice-preview">Ouvindo: {voice.provisional}</p>
+          )}
           <p className="search-status" role="status">
-            {message}
+            {voice.busy ? "" : message}
           </p>
         </form>
       </section>
@@ -169,7 +191,10 @@ export function Search({ pages }: { pages: CatalogPage[] }) {
         <ul>
           {pages.map((page) => (
             <li key={page.id}>
-              <a href={`#/pagina/${page.id}`}>{page.title}</a>
+              <a href={`#/pagina/${page.id}`}>
+                <Icon name="book" />
+                {page.title}
+              </a>
             </li>
           ))}
         </ul>

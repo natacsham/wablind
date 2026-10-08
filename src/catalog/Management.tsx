@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { changed, type CatalogPage, type CatalogState } from "./model";
+import { Icon } from "./Icon";
 
 export function Management({
   pages,
@@ -39,6 +40,7 @@ export function Management({
             ))}
           </select>
           <button className="primary" type="submit">
+            <Icon name="edit" />
             Editar página
           </button>
         </div>
@@ -55,6 +57,7 @@ export function Management({
               : "A versão salva está disponível na busca."}
           </p>
           <a href={`#/pagina/${selected.id}`}>
+            <Icon name="book" />
             Ver leitura de {selected.title}
           </a>
         </div>

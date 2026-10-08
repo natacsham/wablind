@@ -1,4 +1,6 @@
-# WABlind
+# ELIA
+
+**Edição e Leitura com Interação Acessível** — nova identidade da reconstrução demonstrativa da WABlind.
 
 Preparação de páginas web com mediação humana, no contexto da pesquisa de doutorado sobre o **Arcabouço Multimodal para Acessibilidade Digital**.
 
@@ -8,7 +10,7 @@ A demonstração é pública; as alterações salvas permanecem no navegador de 
 
 ## Propósito
 
-A WABlind parte de uma tarefa concreta: tornar o conteúdo de uma página mais compreensível e navegável para quem irá utilizá-lo. O professor examina seus elementos, identifica funções, descreve informações visuais e ajusta o que será apresentado ao leitor.
+ELIA parte de uma tarefa concreta: tornar o conteúdo de uma página mais compreensível e navegável para quem irá utilizá-lo. O professor examina seus elementos, identifica funções, descreve informações visuais e ajusta o que será apresentado ao leitor.
 
 Essa participação importa porque a existência de texto, imagem ou tabela não assegura, por si só, acesso ao conteúdo. É preciso verificar o que cada representação comunica, quais relações precisam ser preservadas e como a pessoa poderá localizar, comparar e retomar as informações.
 
@@ -19,6 +21,10 @@ Na trajetória do doutorado, a WABlind contribui para o estudo da preparação m
 ### Para quem acessa
 
 A página inicial apresenta um campo simples de busca por nome ou endereço. As sugestões aparecem durante a digitação. Ao selecionar um resultado, a pessoa abre a versão preparada pelo professor. As páginas também estão disponíveis como links compactos abaixo da busca, sem cards ou uma seção longa de exploração.
+
+Em um navegador compatível, **Falar** permite dizer o nome da página em português. O texto reconhecido é colocado no campo; a pessoa revisa e confirma o resultado. O microfone não inicia sozinho, não reinicia automaticamente e pode ser encerrado por **Parar** ou **Escape**. Sair da busca, ocultar a aba ou atingir o limite de 30 segundos também encerra a tentativa. A digitação permanece disponível em todos os estados.
+
+O recurso utiliza a [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition), com disponibilidade variável. ELIA não grava áudio nem persiste consultas, mas o navegador pode enviar áudio ao seu provedor de reconhecimento, o que pode exigir internet. Esse aviso aparece junto à busca antes da ativação. Recusa de permissão, ausência de microfone e falha do serviço são informadas sem apagar o texto digitado.
 
 ### Para quem prepara
 
@@ -82,6 +88,8 @@ src/catalog/
   model.ts                 tipos, validação, pesquisa e estado
   App.tsx                  navegação e coordenação da interface
   Search.tsx               sugestões do catálogo
+  useVoiceSearch.ts        uma tentativa explícita de voz, com cancelamento e limites
+  Icon.tsx                 ícones vetoriais que acompanham os rótulos visíveis
   Management.tsx           seleção compacta da página para edição
   Editor.tsx               inspetor visual, marcações, exclusão e salvamento
   inspector.css            destaque e controles contextuais da inspeção
@@ -91,6 +99,7 @@ scripts/build-demo-pages.tsx
 public/demos/              HTML de origem gerado dos mesmos dados
 tests/catalog.test.ts      regras e preservação do conteúdo
 tests/e2e/catalog.spec.ts  testes do fluxo no navegador
+tests/e2e/voice-search.spec.ts  voz, estados de falha e preservação do histórico
 ```
 
 Textos editados são tratados como texto, não como HTML executável. Os tipos de elemento delimitam transformações compatíveis. Imagens, listas e tabelas preservam sua estrutura: o rótulo não converte uma imagem em dados de tabela nem inventa conteúdo.
@@ -109,7 +118,7 @@ pnpm check:privacy
 node scripts/check-release.mjs
 ```
 
-A suíte atual de navegador é `tests/e2e/catalog.spec.ts`. Os testes de interfaces anteriores permanecem preservados, mas não compõem esse gate.
+A suíte atual de navegador abrange `tests/e2e/catalog.spec.ts` e `tests/e2e/voice-search.spec.ts`. Os testes de interfaces anteriores permanecem preservados, mas não compõem esse gate. Os eventos de reconhecimento são simulados: esses testes verificam o comportamento da interface, não a qualidade de reconhecimento da fala nem a integração real com o microfone e o serviço do navegador.
 
 Há testes de busca por teclado, foco, edição, classificação semântica, retirada reversível, separação entre rascunho e leitura e falhas de armazenamento. Os testes de segurança verificam estrutura de dados e escape de texto. As verificações com axe e reflow cobrem os percursos principais.
 
@@ -119,6 +128,8 @@ A leitura manual com NVDA e a avaliação com pessoas com deficiência permanece
 
 Este código reconstrói o fluxo descrito pela autora, preservando o propósito de classificação e preparação de páginas. Não é uma execução do código histórico.
 
+WABlind permanece como nome histórico nas publicações e no repositório. ELIA identifica a interface desta evolução, sem renomear o artefato avaliado nos estudos anteriores. O endereço `/wablind/` e a chave de armazenamento `wablind.catalog.v1` foram mantidos para preservar os links e as edições locais existentes. A página **Sobre** registra essa continuidade.
+
 A [matriz histórica](docs/MATRIZ-HISTORICA.md) separa requisitos documentados de extensões posteriores. A [publicação sobre comunicabilidade da WABlind](https://doi.org/10.5753/cbie.sbie.2018.1153) documenta o estudo anterior. Seus resultados não são transferidos automaticamente para esta interface.
 
-Autoria: **Natacsha Melo**. Projeto de pesquisa. O nome WABlind permanece por continuidade histórica. Não foi adicionada licença permissiva ao código legado; dependências mantêm suas próprias licenças.
+Autoria: **Natacsha Melo**. Projeto de pesquisa. Não foi adicionada licença permissiva ao código legado; dependências mantêm suas próprias licenças.

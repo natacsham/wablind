@@ -12,6 +12,7 @@ import { Search } from "./Search";
 import { Management } from "./Management";
 import { Editor } from "./Editor";
 import { PageContent } from "./PageContent";
+import { Icon } from "./Icon";
 import "./catalog.css";
 
 function routeNow() {
@@ -58,7 +59,7 @@ export default function CatalogApp() {
     return () => window.removeEventListener("hashchange", hashChanged);
   }, []);
   useEffect(() => {
-    document.title = `${currentTitle ? `${currentTitle} · ` : ""}${titles[section] || "Página não encontrada"} — WABlind`;
+    document.title = `${currentTitle ? `${currentTitle} · ` : ""}${titles[section] || "Página não encontrada"} — ELIA`;
   }, [section, currentTitle]);
   useEffect(() => {
     function synchronize(event: StorageEvent) {
@@ -117,14 +118,15 @@ export default function CatalogApp() {
         Ir para o conteúdo
       </a>
       <header className="site-header">
-        <a className="brand" href="#/" aria-label="WABlind — início">
+        <a className="brand" href="#/" aria-label="ELIA — início">
           <span className="brand-symbol" aria-hidden="true">
-            w
+            <Icon name="book" />
           </span>
-          <span>WABlind</span>
+          <span>ELIA</span>
         </a>
         <nav aria-label="Principal">
           <a href="#/" aria-current={section === "" ? "page" : undefined}>
+            <Icon name="search" />
             Buscar páginas
           </a>
           <a
@@ -133,12 +135,14 @@ export default function CatalogApp() {
               ["gestao", "editar"].includes(section) ? "page" : undefined
             }
           >
+            <Icon name="edit" />
             Área do professor
           </a>
           <a
             href="#/sobre"
             aria-current={section === "sobre" ? "page" : undefined}
           >
+            <Icon name="info" />
             Sobre
           </a>
         </nav>
@@ -202,12 +206,31 @@ export default function CatalogApp() {
         ) : section === "sobre" ? (
           <article className="about-page">
             <p className="eyebrow">Protótipo de pesquisa</p>
-            <h1>Uma página, preparada por pessoas.</h1>
+            <h1>Da WABlind à ELIA</h1>
+            <p className="about-lead">
+              ELIA significa{" "}
+              <strong>Edição e Leitura com Interação Acessível</strong>. O nome
+              acompanha o propósito desta versão: preparar páginas com mediação
+              humana e oferecer formas de localizar e ler seu conteúdo.
+            </p>
+            <h2>Uma história que permanece</h2>
             <p>
-              A WABlind explora a preparação de conteúdos web com mediação
-              humana. O professor examina os elementos da página, classifica sua
-              função, descreve informações visuais e retira o que não deve
-              aparecer na leitura preparada.
+              WABlind é o nome histórico da ferramenta documentada nas
+              publicações da pesquisa. ELIA nomeia esta reconstrução, sem
+              renomear os estudos nem atribuir à versão atual os resultados das
+              avaliações anteriores.
+            </p>
+            <p>
+              Permanece a ideia central: o professor examina os elementos da
+              página, classifica sua função, descreve informações visuais e
+              retira o que não deve aparecer na leitura preparada.
+            </p>
+            <p>
+              A ferramenta integra a trajetória do doutorado sobre o Arcabouço
+              Multimodal para Acessibilidade Digital. Nessa trajetória, a
+              preparação de páginas ajuda a examinar como pessoas, tarefas e
+              representações do conteúdo se relacionam. ELIA não executa a
+              ontologia MADO nem recebe automaticamente decisões do AgMADO.
             </p>
             <h2>Experimente em três passos</h2>
             <ol>
@@ -245,6 +268,23 @@ export default function CatalogApp() {
               testes com pessoas com deficiência e leitores de tela. Não há
               declaração de conformidade integral.
             </p>
+            <h2>Busca por voz, com controle</h2>
+            <p>
+              Na busca, use “Falar” para dizer o nome de uma página. O microfone
+              só é solicitado nessa ação. Use “Parar” para finalizar ou Escape
+              para cancelar. O texto reconhecido aparece no campo para revisão;
+              nenhuma página é aberta automaticamente. Digitar continua sendo
+              uma alternativa completa, inclusive quando a voz não estiver
+              disponível.
+            </p>
+            <p>
+              O reconhecimento depende do navegador, da permissão do microfone
+              e, em alguns navegadores, de conexão com um serviço externo. ELIA
+              não grava áudio nem salva o termo de busca, mas o navegador pode
+              enviar áudio ao seu provedor de reconhecimento. A escuta é
+              encerrada ao sair da busca, ocultar a aba ou atingir o limite de
+              uma tentativa.
+            </p>
             <h2>Pesquisa e desenvolvimento</h2>
             <p>
               <a
@@ -260,7 +300,7 @@ export default function CatalogApp() {
                 Código-fonte e documentação no GitHub
               </a>
             </p>
-            <p>Versão 3.0.0-demo.1 · Desenvolvido por Natacsha Melo.</p>
+            <p>Versão 3.1.0-demo.1 · Desenvolvido por Natacsha Melo.</p>
           </article>
         ) : (
           <section className="page-heading">
@@ -272,7 +312,7 @@ export default function CatalogApp() {
       </main>
       <footer className="site-footer">
         <p>
-          WABlind <span aria-hidden="true">/</span> Demonstração de pesquisa
+          ELIA <span aria-hidden="true">/</span> Demonstração de pesquisa
         </p>
         <p>
           Páginas fictícias. Edição local, sem cadastro.{" "}

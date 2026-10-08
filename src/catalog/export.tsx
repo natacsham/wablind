@@ -21,7 +21,7 @@ export function exportPage(
             httpEquiv="Content-Security-Policy"
             content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'"
           />
-          <title>{`${pageTitle(page, edits)} — WABlind`}</title>
+          <title>{`${pageTitle(page, edits)} — ELIA`}</title>
           <style>{portableStyle + pageStyles}</style>
         </head>
         <body>

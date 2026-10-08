@@ -152,7 +152,7 @@ export function withWebsiteLayout(page: CatalogPage): CatalogPage {
       kind: "paragraph",
       text:
         site.name +
-        " · Site fictício criado para a demonstração WABlind. Textos, anúncios e ilustrações são próprios.",
+        " · Site fictício criado para a demonstração ELIA. Textos, anúncios e ilustrações são próprios.",
       area: "footer",
       appearance: "metadata",
     },

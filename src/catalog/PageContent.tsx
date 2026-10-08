@@ -61,6 +61,7 @@ export function Illustration({
           <text x="374" y="144" fill="#163d38" fontSize="19">
             chuva
           </text>
+          <rect x="258" y="200" width="46" height="32" rx="5" fill="#236e83" />
           <text x="267" y="222" fill="white" fontSize="19">
             rio
           </text>

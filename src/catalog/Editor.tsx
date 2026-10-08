@@ -17,6 +17,7 @@ import {
   type PageState,
 } from "./model";
 import { PageContent } from "./PageContent";
+import { Icon } from "./Icon";
 import "./inspector.css";
 
 // The rendered page is the selection surface, not a list of editable cards.
@@ -103,12 +104,19 @@ export function Editor({
   return (
     <div className="inspector-workspace">
       <div className="inspector-bar">
-        <a href="#/gestao">← Páginas</a>
+        <a href="#/gestao">
+          <Icon name="back" />
+          Páginas
+        </a>
         <span className="inspector-page-name">
           {pageTitle(page, state.draft)}
         </span>
-        <a href={`#/previa/${page.id}`}>Ver leitura</a>
+        <a href={`#/previa/${page.id}`}>
+          <Icon name="book" />
+          Ver leitura
+        </a>
         <button className="primary" onClick={save} disabled={!pending}>
+          <Icon name="save" />
           Salvar
         </button>
       </div>
@@ -150,6 +158,7 @@ export function Editor({
             }}
             disabled={!undo}
           >
+            <Icon name="undo" />
             Desfazer
           </button>
           <button
@@ -157,6 +166,7 @@ export function Editor({
             aria-controls="removed-elements"
             onClick={() => setShowRemoved(!showRemoved)}
           >
+            <Icon name="trash" />
             Excluídos ({removed.length})
           </button>
         </div>
@@ -354,6 +364,7 @@ export function Editor({
             </details>
             <div className="inspector-bottom-actions">
               <button className="inspector-delete" onClick={remove}>
+                <Icon name="trash" />
                 Excluir elemento
               </button>
               <button
@@ -365,6 +376,7 @@ export function Editor({
                   );
                 }}
               >
+                <Icon name="undo" />
                 Restaurar original
               </button>
             </div>
