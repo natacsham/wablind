@@ -4,7 +4,7 @@ Escopo: versão 3.0.0-demo.1. Fluxo público: busca, leitura, gestão, edição 
 
 ## Verificações executadas
 
-Resultado da revisão das páginas: compilação concluída; nove testes específicos das regras do catálogo e 21 testes de navegador aprovados. Os testes de módulos anteriores são executados separadamente e não são contados como cobertura desta interface. O axe não detectou violações nas cinco rotas examinadas, no painel de inspeção aberto nem nos três sites fictícios. A inspeção visual conferiu a página sem seleção e com o painel contextual aberto. Nenhum desses testes cobre compartilhamento remoto ou leitura manual com leitor de tela.
+Resultado da revisão das páginas e do acesso compacto: compilação concluída; nove testes específicos das regras do catálogo e 24 testes de navegador aprovados. Os testes de módulos anteriores são executados separadamente e não são contados como cobertura desta interface. O axe não detectou violações nas cinco rotas examinadas, no painel de inspeção aberto nem nos três sites fictícios. A inspeção visual conferiu a busca, a seleção da página pelo professor e o editor sem seleção e com o painel contextual aberto. Nenhum desses testes cobre compartilhamento remoto ou leitura manual com leitor de tela.
 
 - Compilação TypeScript e Vite em modo de produção.
 - Testes de regras do catálogo: busca sem dependência de acentos, endereços conhecidos, separação entre rascunho e leitura, validação de estrutura, compatibilidade da classificação e integridade da fonte.
@@ -20,6 +20,9 @@ Resultado da revisão das páginas: compilação concluída; nove testes especí
 - Reflow a 320 CSS px nos mesmos percursos, com verificação de ausência de rolagem horizontal da página.
 - Presença dos conteúdos com cores forçadas e movimento reduzido.
 - Nenhuma chamada a autenticação, API ou domínio externo no percurso principal observado.
+- Entrada compacta: busca e gestão cabem em 1280 × 720 CSS px sem rolagem vertical. A ampliação e as telas menores podem exigir rolagem vertical, preservando os controles e o conteúdo.
+- Seleção nativa da página por teclado, confirmação explícita antes da navegação, título atualizado nas opções e validação de escolha vazia.
+- Campos e botões da busca e da gestão com texto de pelo menos 16 px no ambiente padrão, alvos de pelo menos 44 px e reflow com ampliação textual a 200%.
 
 Os resultados são reproduzíveis por `pnpm test` e `pnpm test:e2e`. O workflow publica seu relatório como artefato de CI. A suíte unitária inclui testes preservados dos módulos anteriores, portanto seu total não equivale à quantidade de testes da interface nova.
 

@@ -4,12 +4,12 @@ import {
   loadState,
   parseState,
   STORAGE_KEY,
-  changed,
   pageTitle,
   type CatalogState,
   type PageState,
 } from "./model";
 import { Search } from "./Search";
+import { Management } from "./Management";
 import { Editor } from "./Editor";
 import { PageContent } from "./PageContent";
 import "./catalog.css";
@@ -149,7 +149,7 @@ export default function CatalogApp() {
         ref={main}
         tabIndex={-1}
       >
-        {section !== "editar" && (
+        {!["", "gestao", "editar"].includes(section) && (
           <p className="local-note">
             Prévia técnica: a edição compartilhada entre visitantes ainda não
             está conectada.
@@ -166,52 +166,7 @@ export default function CatalogApp() {
         {section === "" ? (
           <Search pages={publishedPages} />
         ) : section === "gestao" ? (
-          <>
-            <div className="page-heading">
-              <p className="eyebrow">Área do professor</p>
-              <h1>Gerenciar páginas</h1>
-              <p>
-                As páginas já estão cadastradas. Abra uma delas para classificar
-                elementos, acrescentar descrições e ajustar a leitura.
-              </p>
-            </div>
-            <p className="local-note">
-              Demonstração sem login. As alterações ficam neste navegador; não
-              modificam o catálogo de outros visitantes.
-            </p>
-            <ul className="management-list">
-              {publishedPages.map((item, index) => (
-                <li key={item.id}>
-                  <span className="management-number" aria-hidden="true">
-                    0{index + 1}
-                  </span>
-                  <div>
-                    <p className="eyebrow">{item.topic}</p>
-                    <h2>{item.title}</h2>
-                    <p>{item.summary}</p>
-                    <p className="source-address">{item.address}</p>
-                    <p className="hint">
-                      {changed(
-                        catalog.pages[item.id].draft,
-                        catalog.pages[item.id].published,
-                      )
-                        ? "Rascunho com alterações ainda não disponíveis na busca."
-                        : "Versão preparada disponível na busca."}
-                    </p>
-                  </div>
-                  <div className="management-links">
-                    <a className="button primary" href={`#/editar/${item.id}`}>
-                      Editar<span className="sr-only"> {item.title}</span>
-                    </a>
-                    <a href={`#/pagina/${item.id}`}>
-                      Abrir leitura
-                      <span className="sr-only"> de {item.title}</span>
-                    </a>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </>
+          <Management pages={publishedPages} catalog={catalog} />
         ) : section === "editar" && page ? (
           <Editor
             key={page.id}

@@ -18,11 +18,11 @@ Na trajetória do doutorado, a WABlind contribui para o estudo da preparação m
 
 ### Para quem acessa
 
-A página inicial apresenta um campo simples de busca por nome ou endereço. As sugestões vêm das páginas cadastradas na base. Ao selecionar um resultado, a pessoa abre a versão preparada pelo professor.
+A página inicial apresenta um campo simples de busca por nome ou endereço. As sugestões aparecem durante a digitação. Ao selecionar um resultado, a pessoa abre a versão preparada pelo professor. As páginas também estão disponíveis como links compactos abaixo da busca, sem cards ou uma seção longa de exploração.
 
 ### Para quem prepara
 
-Na área de gestão, sem login nesta demonstração, o professor abre a própria página. O editor funciona como um inspetor visual: passar o mouse destaca o elemento; clicar abre suas opções. Não há uma ficha permanente nem uma sequência de formulários para percorrer. O fluxo é **abrir → selecionar e marcar → salvar**. Pode:
+Na área de gestão, sem login nesta demonstração, o professor escolhe a página em um seletor nativo e aciona **Editar página**. A seleção não navega automaticamente; o teclado permite escolher e confirmar sem perda inesperada de contexto. O editor funciona como um inspetor visual: passar o mouse destaca o elemento; clicar abre suas opções. Não há uma ficha permanente nem uma sequência de formulários para percorrer. O fluxo é **abrir → selecionar e marcar → salvar**. Pode:
 
 - classificar um trecho como texto, título de seção, aviso ou propaganda e identificar menus;
 - identificar e descrever imagens;
@@ -82,6 +82,7 @@ src/catalog/
   model.ts                 tipos, validação, pesquisa e estado
   App.tsx                  navegação e coordenação da interface
   Search.tsx               sugestões do catálogo
+  Management.tsx           seleção compacta da página para edição
   Editor.tsx               inspetor visual, marcações, exclusão e salvamento
   inspector.css            destaque e controles contextuais da inspeção
   PageContent.tsx          apresentação semântica dos elementos

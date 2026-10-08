@@ -1,5 +1,84 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+
+test("home and teacher selection fit a desktop viewport without catalog cards", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  for (const route of ["", "#/gestao"]) {
+    await page.goto(`./${route}`);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollHeight <= innerHeight + 1,
+      ),
+    ).toBe(true);
+    await expect(page.locator(".page-cards, .management-list")).toHaveCount(0);
+  }
+  const selection = page.getByLabel("Página para editar");
+  await expect(selection.locator("option")).toHaveCount(4);
+  await selection.selectOption("biblioteca-do-bairro");
+  await expect(
+    page.getByRole("link", { name: "Ver leitura de Biblioteca do bairro" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollHeight <= innerHeight + 1,
+    ),
+  ).toBe(true);
+});
+
+test("native teacher selection works by keyboard without opening a page on change", async ({
+  page,
+}) => {
+  await page.goto("./#/gestao");
+  const selection = page.getByLabel("Página para editar");
+  await page
+    .getByRole("button", { name: "Editar página", exact: true })
+    .click();
+  await expect(selection).toBeFocused();
+  await expect(page).toHaveURL(/#\/gestao$/);
+  await selection.press("Home");
+  await selection.press("ArrowDown");
+  await selection.press("ArrowDown");
+  await expect(selection).toHaveValue("agua-em-numeros");
+  await expect(page).toHaveURL(/#\/gestao$/);
+  await selection.press("Tab");
+  await expect(
+    page.getByRole("button", { name: "Editar página", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/#\/editar\/agua-em-numeros$/);
+  await expect(page.locator("main")).toBeFocused();
+});
+
+test("compact controls retain readable text, target size and reflow at 200 percent text", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  for (const route of ["", "#/gestao"]) {
+    await page.goto(`./${route}`);
+    const controls = page.locator("main input, main select, main button");
+    for (const control of await controls.all()) {
+      expect(
+        await control.evaluate((el) =>
+          parseFloat(getComputedStyle(el).fontSize),
+        ),
+      ).toBeGreaterThanOrEqual(16);
+      expect((await control.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+    await page.evaluate(
+      () => (document.documentElement.style.fontSize = "200%"),
+    );
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    ).toBe(true);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  }
+});
+
 test("page title is inspectable, editable and used in the saved reading, search and browser title", async ({
   page,
 }) => {
@@ -20,6 +99,12 @@ test("page title is inspectable, editable and used in the saved reading, search 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Rios e cidades",
   );
+  await page.goto("./#/gestao");
+  await expect(
+    page
+      .getByLabel("Página para editar")
+      .locator('option[value="caminho-da-agua"]'),
+  ).toHaveText("Rios e cidades");
 });
 test("fictional websites have editable masthead, banner, sidebar and footer, without third-party resources", async ({
   page,
@@ -86,8 +171,9 @@ test("editing changes semantics and descriptions, publishes locally and survives
   page,
 }) => {
   await page.goto("./#/gestao");
+  await page.getByLabel("Página para editar").selectOption("caminho-da-agua");
   await page
-    .getByRole("link", { name: "Editar O caminho da água", exact: true })
+    .getByRole("button", { name: "Editar página", exact: true })
     .click();
   await page
     .getByLabel("Selecionar elemento", { exact: true })
@@ -202,7 +288,7 @@ test("empty and unavailable searches do not simulate a capture", async ({
   await page.getByRole("button", { name: "Buscar", exact: true }).click();
   await expect(page.locator(".search-status")).toContainText("Nenhuma página");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Encontre sua próxima leitura.",
+    "Encontre uma página",
   );
 });
 test("the teacher and reader have no HTML or JSON download controls", async ({
@@ -269,7 +355,10 @@ test("no authentication or network API is used", async ({ page }) => {
     .getByRole("link", { name: "Área do professor", exact: true })
     .click();
   await page
-    .getByRole("link", { name: "Editar Biblioteca do bairro", exact: true })
+    .getByLabel("Página para editar")
+    .selectOption("biblioteca-do-bairro");
+  await page
+    .getByRole("button", { name: "Editar página", exact: true })
     .click();
   await page.locator('[data-element="intro"] .inspect-target').click();
   await page.getByText("Texto e descrição", { exact: true }).click();

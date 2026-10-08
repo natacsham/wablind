@@ -45,12 +45,7 @@ export function Search({ pages }: { pages: CatalogPage[] }) {
   return (
     <>
       <section className="search-hero" aria-labelledby="search-title">
-        <p className="eyebrow">Páginas preparadas para leitura</p>
-        <h1 id="search-title">Encontre sua próxima leitura.</h1>
-        <p className="hero-description">
-          Busque uma página do catálogo e abra a versão preparada pelo
-          professor.
-        </p>
+        <h1 id="search-title">Encontre uma página</h1>
         <form
           role="search"
           aria-label="Buscar no catálogo"
@@ -162,36 +157,23 @@ export function Search({ pages }: { pages: CatalogPage[] }) {
             ))}
           </ul>
           <p id="search-hint" className="hint">
-            Somente páginas deste catálogo. Nenhum site externo é baixado.
+            Digite para ver as páginas disponíveis nesta demonstração.
           </p>
           <p className="search-status" role="status">
             {message}
           </p>
         </form>
       </section>
-      <section className="catalog-section" aria-labelledby="catalog-title">
-        <div className="section-heading">
-          <h2 id="catalog-title">Explore o catálogo</h2>
-          <span className="hint">3 páginas fictícias</span>
-        </div>
-        <ul className="page-cards">
-          {pages.map((page, index) => (
+      <nav className="available-pages" aria-label="Páginas disponíveis">
+        <p>Páginas disponíveis</p>
+        <ul>
+          {pages.map((page) => (
             <li key={page.id}>
-              <span className="card-number" aria-hidden="true">
-                0{index + 1}
-              </span>
-              <p className="eyebrow">{page.topic}</p>
-              <h3>
-                <a href={`#/pagina/${page.id}`}>{page.title}</a>
-              </h3>
-              <p>{page.summary}</p>
-              <span className="card-action" aria-hidden="true">
-                Abrir leitura →
-              </span>
+              <a href={`#/pagina/${page.id}`}>{page.title}</a>
             </li>
           ))}
         </ul>
-      </section>
+      </nav>
     </>
   );
 }
