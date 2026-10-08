@@ -1,19 +1,23 @@
 {
   "name": "wablind",
-  "version": "2.1.0-beta.1",
+  "version": "3.0.0-demo.1",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@11.19.0",
+  "packageManager": "pnpm@11.25.0",
   "engines": {
     "node": ">=24 <25"
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build && tsup server/index.ts --format esm --platform node --target node24 --out-dir dist-server",
-    "build:web": "vite build",
+    "build": "tsc --noEmit && pnpm fixtures && vite build",
+    "build:web": "pnpm fixtures && vite build",
+    "build:legacy-api": "tsup server/index.ts --format esm --platform node --target node24 --out-dir dist-server",
+    "fixtures": "tsx scripts/build-demo-pages.tsx",
+    "check:privacy": "node scripts/check-privacy.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "import:html": "tsx scripts/import-html.ts",
     "preview": "vite preview --host 127.0.0.1",
     "start": "node --env-file-if-exists=.env dist-server/index.js",
     "dev:api": "tsx --env-file-if-exists=.env server/index.ts"
@@ -49,6 +53,6 @@
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vite": "^7.1.4",
-    "vitest": "^3.2.4"
+    "vitest": "^5.0.3"
   }
 }

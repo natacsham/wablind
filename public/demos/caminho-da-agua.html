@@ -1,0 +1,324 @@
+<!doctype html><html lang="pt-BR"><head><meta charSet="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><meta name="referrer" content="no-referrer"/><meta http-equiv="Content-Security-Policy" content="default-src &#x27;none&#x27;; style-src &#x27;unsafe-inline&#x27;; img-src data:; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;"/><title>O caminho da água — WABlind</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;background:#f5f6f3;color:#182c28;font:1.125rem/1.65 system-ui,sans-serif}main{max-width:52rem;margin:2rem auto;padding:clamp(1rem,4vw,3rem);background:#fff}h1{font-size:2rem;line-height:1.2}h2{font-size:1.4rem}p,li{overflow-wrap:anywhere}figure{margin:0}svg{width:100%;height:auto}figcaption,.eyebrow,.document-credit{font-size:.95rem;color:#40574f}.document-element{margin:1.6rem 0}.element-description{border-left:3px solid #286453;padding-left:1rem}.description-label{font-weight:700}table{border-collapse:collapse;width:100%}th,td{border:1px solid #70877f;padding:.65rem;text-align:left}caption{text-align:left;font-weight:700;margin-bottom:.5rem}.skip{position:absolute;left:-10000px}.skip:focus{position:static}a{color:#175646}:focus-visible{outline:3px solid #9a4a19;outline-offset:4px}.element-tag{font-weight:700}.page-notice{padding:1rem;background:#f1f3f0}@media print{body{background:white}main{margin:0;padding:0}figure,table{break-inside:avoid}}.document-paper {
+  max-width: 820px;
+  margin: 0 auto;
+  background: white;
+  padding: clamp(1rem, 3.5vw, 2.5rem);
+  border: 1px solid #d6dfd7;
+  border-radius: 6px;
+}
+/* Fictional websites keep their own visual hierarchy inside the inspector. */
+.document-paper.site-page {
+  --site-ink: #203f44;
+  --site-accent: #235f57;
+  max-width: 1120px;
+  padding: 0;
+  border-radius: 3px;
+  overflow: visible;
+  container-type: inline-size;
+}
+.theme-data.site-page {
+  --site-ink: #233e53;
+  --site-accent: #285c81;
+}
+.theme-community.site-page {
+  --site-ink: #5a3b30;
+  --site-accent: #7a4a36;
+}
+.page-masthead {
+  padding: 1.4rem 2rem 0.5rem;
+  border-top: 5px solid var(--site-accent);
+  border-bottom: 1px solid #ced6cf;
+}
+.page-masthead .document-element {
+  margin: 0.3rem 0;
+}
+.element-brand p {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.5rem, 4cqi, 2.3rem);
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  color: var(--site-ink);
+  margin: 0;
+}
+.element-metadata p {
+  color: #53605b;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  margin: 0.4rem 0;
+}
+.page-masthead .page-menu {
+  margin-top: 1rem;
+  border-top: 1px solid #e0e4df;
+}
+.site-page .page-menu ul {
+  padding: 0;
+}
+.site-page .page-menu a {
+  font-size: 0.9rem;
+  color: var(--site-accent);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+.site-page .page-menu a:hover {
+  border-color: currentColor;
+}
+.site-banner {
+  padding: 1.1rem 2rem 0;
+}
+.site-banner:empty {
+  display: none;
+}
+.site-banner .document-element {
+  margin: 0;
+}
+.page-ad {
+  background: #f3efe6;
+  color: #283f37;
+  border: 1px solid #ddd6c7;
+}
+.page-ad > p {
+  padding: 1rem;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.ad-label {
+  display: block;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 500;
+  color: #5c6055;
+  background: #f7f5ef;
+}
+.site-banner .page-ad {
+  display: grid;
+  grid-template-columns: 35% minmax(0, 1fr);
+  align-items: center;
+}
+.site-banner .ad-label {
+  grid-column: 1/-1;
+}
+.site-banner .page-ad > svg {
+  height: 105px;
+  width: 100%;
+  object-fit: cover;
+  background: #263f44;
+}
+.site-banner .page-ad > p {
+  font-size: clamp(1rem, 2cqi, 1.25rem);
+  padding: 1rem 1.5rem;
+}
+.site-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.34fr);
+  gap: 2rem;
+  padding: 1.5rem 2rem 2rem;
+  align-items: start;
+}
+.site-columns.without-sidebar {
+  grid-template-columns: minmax(0, 1fr);
+}
+.site-article,
+.site-sidebar {
+  min-width: 0;
+}
+.site-article h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 4cqi, 2.7rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--site-ink);
+  line-height: 1.1;
+}
+.site-article > .document-element:first-child {
+  margin-top: 0;
+}
+.site-article > .element-metadata {
+  margin: 0.6rem 0;
+}
+.site-article h2 {
+  font-size: 1.35rem;
+  margin: 0;
+}
+.site-sidebar {
+  border-left: 1px solid #d6dfd7;
+  padding-left: 1.3rem;
+}
+.site-sidebar > .document-element:first-child {
+  margin-top: 0;
+}
+.site-sidebar h2 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--site-accent);
+  padding-bottom: 0.6rem;
+}
+.site-sidebar figcaption {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--site-ink);
+}
+.site-sidebar .page-menu ul {
+  display: block;
+}
+.site-sidebar .page-menu a {
+  padding: 0.35rem 0;
+}
+.site-sidebar .page-notice {
+  font-size: 0.85rem;
+}
+.page-site-footer {
+  padding: 1rem 2rem;
+  border-top: 1px solid #d6dfd7;
+  background: #f6f7f3;
+}
+.page-site-footer .document-element {
+  margin: 0.5rem 0;
+}
+.site-page > .main-jump {
+  margin: 0.6rem 2rem 0;
+}
+@container (max-width:650px) {
+  .site-columns {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1.4rem;
+  }
+  .site-sidebar {
+    border-left: 0;
+    border-top: 1px solid #d6dfd7;
+    padding: 1.2rem 0 0;
+  }
+  .site-sidebar .page-illustration {
+    max-height: 210px;
+  }
+  .page-masthead,
+  .page-site-footer {
+    padding-inline: 1.4rem;
+  }
+  .site-banner {
+    padding-inline: 1.4rem;
+  }
+  .site-banner .page-ad {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .site-banner .page-ad > svg {
+    height: 95px;
+  }
+  .site-banner .page-ad > p {
+    padding: 0.8rem;
+  }
+  .element-brand p {
+    font-size: 1.6rem;
+  }
+}
+@media (forced-colors: active) {
+  .site-page .page-ad,
+  .page-masthead {
+    border-color: CanvasText;
+  }
+}
+.document-element {
+  margin: 1.7rem 0;
+  scroll-margin-block: 2rem;
+}
+.page-menu ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.2rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.page-menu a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.main-jump {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.document-element[role="region"]:focus {
+  outline: 3px solid #934117;
+  outline-offset: 6px;
+}
+.document-paper p,
+.document-paper li {
+  line-height: 1.75;
+}
+.document-paper figure {
+  margin: 0;
+}
+.page-illustration {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.document-paper figcaption {
+  font-size: 0.9rem;
+  color: #52665d;
+  margin-top: 0.5rem;
+}
+.element-tag {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #205849;
+  border-bottom: 1px solid #d6dfd7;
+  padding-bottom: 0.4rem;
+}
+.element-description {
+  padding: 0.3rem 0 0.3rem 1rem;
+  margin-top: 1.2rem;
+  border-left: 3px solid #597650;
+}
+.element-description p {
+  margin: 0.3rem 0;
+}
+.description-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #3e574b;
+}
+.list-label {
+  font-weight: 650;
+}
+.document-paper ul {
+  padding-left: 1.5rem;
+}
+.table-wrap table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 1rem;
+}
+.table-wrap th,
+.table-wrap td {
+  border: 1px solid #819488;
+  padding: 0.7rem;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.table-wrap thead {
+  background: #edf2e9;
+}
+.table-wrap caption {
+  text-align: left;
+  font-weight: 650;
+  margin-bottom: 0.6rem;
+}
+.document-paper .page-notice {
+  padding: 1rem;
+  background: #f4f1e7;
+}
+.document-credit {
+  font-size: 0.8rem;
+  color: #52665d;
+  border-top: 1px solid #d6dfd7;
+  margin-top: 2rem;
+  padding-top: 1rem;
+}
+</style></head><body><a class="skip" href="#conteudo">Ir para o conteúdo</a><main id="conteudo" tabindex="-1"><div class="document-paper site-page theme-science"><header class="page-masthead"><div class="document-element element-brand" id="page-element-site-brand" data-element="site-brand" tabindex="-1"><p>horizonte.</p></div><div class="document-element element-metadata" id="page-element-site-description" data-element="site-description" tabindex="-1"><p>Ciência, ambiente e cotidiano · site fictício</p></div><div class="document-element" id="page-element-navigation" data-element="navigation" tabindex="-1"><nav class="page-menu" aria-label="Nesta página"><ul><li><a href="#page-element-diagram">O ciclo da água</a></li><li><a href="#page-element-steps-title">Etapas</a></li><li><a href="#page-element-activity">Atividade</a></li></ul></nav></div></header><div class="site-banner"><div class="document-element element-promotion" id="page-element-top-banner" data-element="top-banner" tabindex="-1"><aside class="page-ad" aria-label="Propaganda"><span class="ad-label">Publicidade · exemplo fictício</span><svg viewBox="0 0 600 240" role="img" aria-label="Composição ilustrada com folhas, livros e formas geométricas. Campanha fictícia." class="page-illustration" focusable="false"><rect width="600" height="240" rx="6" fill="#eaf1ee"></rect><g><rect width="600" height="240" rx="2" fill="#263f44"></rect><circle cx="105" cy="110" r="77" fill="#dbaf6e"></circle><path d="M45 213q31-98 91-167-5 110-91 167" fill="#7eab94"></path><path d="M49 208Q179 134 165 45" fill="none" stroke="#b7d2bd" stroke-width="3"></path><path d="m270 83 70-25v122l-70 25Zm70-25 84 27v122l-84-27Z" fill="#f5ead2"></path><path d="M340 59v122m-55-77 36-13m-36 35 36-13m35-2 50 16m-50 11 50 16" fill="none" stroke="#ae8c62" stroke-width="3"></path><circle cx="503" cy="168" r="35" fill="#a87249"></circle><path d="m458 60 30-25 23 30-30 25Z" fill="#7eab94"></path></g></svg><p>Semana do Meio Ambiente • Descobertas para fazer em casa</p></aside></div></div><div class="site-columns"><article class="site-article"><div class="document-element element-metadata" id="page-element-article-section" data-element="article-section" tabindex="-1"><p>AMBIENTE / CIÊNCIA NO DIA A DIA</p></div><div class="document-element" id="page-element-page-title" data-element="page-title" tabindex="-1"><h1>O caminho da água</h1></div><div class="document-element element-metadata" id="page-element-byline" data-element="byline" tabindex="-1"><p>Redação do portal · conteúdo demonstrativo · leitura de 4 minutos</p></div><div class="document-element" id="page-element-intro" data-element="intro" tabindex="-1"><p>A água circula entre rios, solo e atmosfera. Observe o esquema e acompanhe as etapas para compreender esse percurso.</p></div><div class="document-element" id="page-element-lead-image" data-element="lead-image" tabindex="-1"><figure><svg viewBox="0 0 600 240" role="img" aria-label="Ilustração de um rio sinuoso entre árvores e morros, sob o sol." class="page-illustration" focusable="false"><rect width="600" height="240" rx="6" fill="#eaf1ee"></rect><g><rect width="600" height="240" fill="#dae7de"></rect><circle cx="485" cy="52" r="27" fill="#f0c47c"></circle><path d="M0 146 105 48 242 150 374 64 600 143V240H0Z" fill="#789b82"></path><path d="M0 190 145 128 265 177 433 108 600 153V240H0Z" fill="#325f52"></path><path d="M278 138Q396 163 273 188T253 240H460Q344 207 374 194T299 138Z" fill="#8dc5cb"></path><path d="M306 150Q353 165 317 178M278 211Q256 222 286 235" stroke="#daeeea" stroke-width="3" fill="none"></path><g transform="translate(45 140)"><path d="M0 45V0" stroke="#254536" stroke-width="7"></path><path d="M-21 16 0-39 21 16Z" fill="#234d3f"></path></g><g transform="translate(87 154)"><path d="M0 45V0" stroke="#254536" stroke-width="7"></path><path d="M-21 16 0-39 21 16Z" fill="#234d3f"></path></g><g transform="translate(128 168)"><path d="M0 45V0" stroke="#254536" stroke-width="7"></path><path d="M-21 16 0-39 21 16Z" fill="#234d3f"></path></g><g transform="translate(493 140)"><path d="M0 45V0" stroke="#254536" stroke-width="7"></path><path d="M-21 16 0-39 21 16Z" fill="#234d3f"></path></g><g transform="translate(542 154)"><path d="M0 45V0" stroke="#254536" stroke-width="7"></path><path d="M-21 16 0-39 21 16Z" fill="#234d3f"></path></g><g transform="translate(574 168)"><path d="M0 45V0" stroke="#254536" stroke-width="7"></path><path d="M-21 16 0-39 21 16Z" fill="#234d3f"></path></g></g></svg><figcaption>Um rio atravessa a paisagem</figcaption></figure></div><div class="document-element" id="page-element-diagram" data-element="diagram" tabindex="-1"><figure><svg viewBox="0 0 600 240" role="img" aria-label="Esquema do ciclo da água: rio, vapor, nuvens e chuva." class="page-illustration" focusable="false"><rect width="600" height="240" rx="6" fill="#eaf1ee"></rect><circle cx="65" cy="51" r="24" fill="#b56924"></circle><path d="M0 198Q100 155 200 198T400 198T600 198V240H0Z" fill="#236e83"></path><path d="M210 82q-21-32 14-42 18-28 44-6 37-13 43 20 31 33-11 36H232Z" fill="white" stroke="#294b45" stroke-width="3"></path><path d="M149 172V90m-9 13 9-13 9 13M352 102v66m-9-13 9 13 9-13" fill="none" stroke="#294b45" stroke-width="4"></path><text x="67" y="144" fill="#163d38" font-size="19">vapor</text><text x="374" y="144" fill="#163d38" font-size="19">chuva</text><text x="267" y="222" fill="white" font-size="19">rio</text><text x="222" y="119" fill="#163d38" font-size="19">nuvens</text></svg><figcaption>Um percurso que se repete</figcaption></figure></div><div class="document-element" id="page-element-steps-title" data-element="steps-title" tabindex="-1"><p>Etapas do percurso</p></div><div class="document-element" id="page-element-steps" data-element="steps" tabindex="-1"><p class="list-label">Do rio à chuva</p><ul><li>A energia do Sol favorece a evaporação da água.</li><li>O vapor se resfria e se condensa em gotículas, formando nuvens.</li><li>A água retorna à superfície como precipitação.</li><li>Parte infiltra no solo e parte escoa até os rios.</li></ul></div><div class="document-element" id="page-element-activity" data-element="activity" tabindex="-1"><p>Explique como a água de um rio pode voltar a ele depois de passar pela atmosfera.</p></div><div class="document-element" id="page-element-promo" data-element="promo" tabindex="-1"><p class="page-notice">Espaço demonstrativo de anúncio. Este aviso fictício pode ser retirado da leitura.</p></div></article><aside class="site-sidebar" aria-label="Conteúdo complementar do site"><div class="document-element" id="page-element-related-heading" data-element="related-heading" tabindex="-1"><h2>Explore também</h2></div><div class="document-element" id="page-element-related-image" data-element="related-image" tabindex="-1"><figure><svg viewBox="0 0 600 240" role="img" aria-label="Livros ilustrados, um deles aberto sobre uma mesa." class="page-illustration" focusable="false"><rect width="600" height="240" rx="6" fill="#eaf1ee"></rect><g><rect width="600" height="240" fill="#eee5d6"></rect><rect x="48" y="37" width="506" height="145" rx="3" fill="#d5b791"></rect><rect x="56" y="48" width="490" height="120" fill="#54473f"></rect><rect x="70" y="64" width="34" height="104" rx="2" fill="#a54f3a"></rect><rect x="111" y="50" width="30" height="118" rx="2" fill="#e2c489"></rect><rect x="150" y="63" width="48" height="105" rx="2" fill="#467777"></rect><rect x="205" y="57" width="29" height="111" rx="2" fill="#ae8965"></rect><rect x="240" y="71" width="40" height="97" rx="2" fill="#899878"></rect><rect x="295" y="58" width="31" height="110" rx="2" fill="#d08b54"></rect><rect x="340" y="49" width="42" height="119" rx="2" fill="#c6b799"></rect><rect x="390" y="66" width="32" height="102" rx="2" fill="#698889"></rect><rect x="435" y="55" width="48" height="113" rx="2" fill="#aa594a"></rect><rect y="182" width="600" height="58" fill="#b58d63"></rect><path d="M182 214q58-45 118-11 58-35 115 10l-25 20q-49-27-90-14-43-13-98 15Z" fill="#fff9eb" stroke="#745d45" stroke-width="2"></path><path d="M300 203v16" stroke="#baaa8e" stroke-width="2"></path><path d="M501 191V139l-20-31" stroke="#294942" stroke-width="6" fill="none"></path><path d="m450 109 35-32 35 33Z" fill="#396958"></path></g></svg><figcaption>O que acontece entre uma chuva e outra?</figcaption></figure></div><div class="document-element" id="page-element-related-navigation" data-element="related-navigation" tabindex="-1"><nav class="page-menu" aria-label="Atalhos para a reportagem"><ul><li><a href="#page-element-diagram">O ciclo da água</a></li><li><a href="#page-element-steps-title">Etapas</a></li><li><a href="#page-element-activity">Atividade</a></li></ul></nav></div><div class="document-element element-promotion" id="page-element-sidebar-ad" data-element="sidebar-ad" tabindex="-1"><aside class="page-ad" aria-label="Propaganda"><span class="ad-label">Publicidade · exemplo fictício</span><svg viewBox="0 0 600 240" role="img" aria-label="Ilustração publicitária com livro, folhas e formas geométricas." class="page-illustration" focusable="false"><rect width="600" height="240" rx="6" fill="#eaf1ee"></rect><g><rect width="600" height="240" rx="2" fill="#263f44"></rect><circle cx="105" cy="110" r="77" fill="#dbaf6e"></circle><path d="M45 213q31-98 91-167-5 110-91 167" fill="#7eab94"></path><path d="M49 208Q179 134 165 45" fill="none" stroke="#b7d2bd" stroke-width="3"></path><path d="m270 83 70-25v122l-70 25Zm70-25 84 27v122l-84-27Z" fill="#f5ead2"></path><path d="M340 59v122m-55-77 36-13m-36 35 36-13m35-2 50 16m-50 11 50 16" fill="none" stroke="#ae8c62" stroke-width="3"></path><circle cx="503" cy="168" r="35" fill="#a87249"></circle><path d="m458 60 30-25 23 30-30 25Z" fill="#7eab94"></path></g></svg><p>Estúdio Ipê · cadernos e ideias para o seu dia. Anúncio fictício, sem oferta comercial.</p></aside></div><div class="document-element" id="page-element-newsletter" data-element="newsletter" tabindex="-1"><p class="page-notice">Nosso boletim reúne novas histórias toda semana. Espaço demonstrativo, sem coleta de e-mail.</p></div></aside></div><footer class="page-site-footer"><div class="document-element" id="page-element-footer-menu" data-element="footer-menu" tabindex="-1"><nav class="page-menu" aria-label="Navegação do rodapé"><ul><li><a href="#page-element-page-title">Início da matéria</a></li><li><a href="#page-element-intro">Conteúdo</a></li></ul></nav></div><div class="document-element element-metadata" id="page-element-site-footer" data-element="site-footer" tabindex="-1"><p>horizonte. · Site fictício criado para a demonstração WABlind. Textos, anúncios e ilustrações são próprios.</p></div></footer></div></main></body></html>

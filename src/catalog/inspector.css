@@ -1,0 +1,281 @@
+/* Only the inspector adds an interaction layer; the underlying document keeps its layout. */
+.inspector-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #d6dfd7;
+}
+.inspector-bar a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.inspector-page-name {
+  flex: 1;
+  font-weight: 650;
+  min-width: 10rem;
+}
+.inspector-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.8rem 0 0.3rem;
+}
+.inspector-tools p {
+  flex: 1 1 19rem;
+  font-size: 0.9rem;
+  color: #42594d;
+  margin: 0;
+}
+.inspector-shortcuts {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.inspector-shortcuts select {
+  width: 13rem;
+  max-width: 100%;
+}
+.inspector-shortcuts button {
+  padding: 0.4rem 0.7rem;
+}
+.inspector-save-note {
+  font-size: 0.8rem;
+  color: #52665d;
+  margin: 0.3rem 0 1.3rem;
+}
+.inspector-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+.inspector-layout.has-selection {
+  grid-template-columns: minmax(0, 1fr) 19rem;
+}
+.inspector-canvas {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+.inspector-panel {
+  grid-column: 2;
+  grid-row: 1;
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  background: #fff;
+  border: 1px solid #b7c8bf;
+  border-radius: 6px;
+  padding: 1.1rem;
+}
+.inspector-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.inspector-panel-heading h2 {
+  font-size: 1.05rem;
+  margin: 0;
+  flex: 1;
+}
+.inspector-panel .inspector-close {
+  min-width: 44px;
+  padding: 0.3rem;
+  font-size: 1.6rem;
+  background: transparent;
+  border: 0;
+}
+.inspector-excerpt {
+  color: #52665d;
+  font-size: 0.8rem;
+  margin: 0.4rem 0 1rem;
+}
+.inspector-panel label,
+.inspector-panel legend {
+  font-size: 0.88rem;
+}
+.inspector-panel input,
+.inspector-panel select,
+.inspector-panel textarea {
+  font-size: 0.9rem;
+}
+.inspector-panel .inspector-check {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  margin: 0;
+  font-weight: 500;
+  cursor: pointer;
+}
+.inspector-check input {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  padding: 0;
+  accent-color: #205849;
+}
+.inspector-panel .main-check {
+  margin: 0.8rem 0;
+  padding: 0.6rem;
+  background: #edf2e9;
+  font-weight: 650;
+}
+.inspector-markers {
+  border: 0;
+  padding: 0;
+  margin: 0.8rem 0;
+  min-width: 0;
+}
+.inspector-markers legend {
+  font-weight: 650;
+  margin-bottom: 0.3rem;
+}
+.inspector-details {
+  margin-top: 1rem;
+  border-top: 1px solid #d6dfd7;
+  padding-top: 0.8rem;
+}
+.inspector-details label {
+  margin-top: 0.7rem;
+}
+.inspector-details summary {
+  font-size: 0.9rem;
+}
+.inspector-bottom-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-top: 1px solid #d6dfd7;
+  padding-top: 0.8rem;
+  margin-top: 1rem;
+}
+.inspector-panel .inspector-delete {
+  color: #7d301d;
+  border-color: #ad6955;
+  background: white;
+}
+.inspector-panel .inspector-delete:hover {
+  background: #fff0e7;
+}
+.inspector-bottom-actions .text-button {
+  font-size: 0.8rem;
+  justify-content: center;
+}
+.inspector-canvas .document-paper {
+  width: 100%;
+}
+.inspectable {
+  position: relative;
+}
+.inspectable .inspect-target {
+  position: absolute;
+  inset: -5px;
+  z-index: 2;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  min-height: 44px;
+  width: calc(100% + 10px);
+  cursor: crosshair;
+}
+.inspectable .inspect-target:hover,
+.inspectable .inspect-target:focus-visible {
+  background: #2058490a;
+  outline: 2px dashed #205849;
+  outline-offset: 0;
+}
+.inspecting-selected .inspect-target {
+  outline: 2px solid #205849;
+  outline-offset: 0;
+}
+.inspectable .inspect-target:focus-visible {
+  outline: 3px solid var(--focus);
+}
+.inspect-label {
+  position: absolute;
+  top: 0;
+  right: 0;
+  max-width: 100%;
+  padding: 0.15rem 0.45rem;
+  background: #205849;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+}
+.inspect-target:hover .inspect-label,
+.inspect-target:focus-visible .inspect-label,
+.inspecting-selected .inspect-label {
+  opacity: 1;
+}
+.removed-elements {
+  border: 1px solid #b7c8bf;
+  background: #fff;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.removed-elements h2 {
+  font-size: 1.1rem;
+  margin: 0.2rem 0 0.8rem;
+}
+.removed-elements ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.removed-elements li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+.removed-elements li span {
+  flex: 1;
+}
+@media (max-width: 850px) {
+  .inspector-layout.has-selection {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inspector-panel {
+    position: static;
+    grid-column: 1;
+    grid-row: 1;
+    max-height: none;
+  }
+  .has-selection .inspector-canvas {
+    grid-row: 2;
+  }
+  .inspector-shortcuts {
+    width: 100%;
+  }
+  .inspector-shortcuts select {
+    flex: 1 1 100%;
+  }
+  .inspector-page-name {
+    flex-basis: calc(100% - 7rem);
+  }
+  .removed-elements li {
+    flex-wrap: wrap;
+  }
+}
+@media (forced-colors: active) {
+  .inspectable .inspect-target:hover,
+  .inspecting-selected .inspect-target {
+    outline-color: Highlight;
+  }
+  .inspect-label {
+    background: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+  }
+}

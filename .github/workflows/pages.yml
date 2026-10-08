@@ -16,12 +16,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
-          version: 11.19.0
+          version: 11.25.0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm check:privacy
       - run: pnpm typecheck
       - run: node scripts/check-release.mjs
       - run: pnpm test
@@ -29,13 +30,7 @@ jobs:
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
-      - name: Compile release with public service configuration
-        run: pnpm build:web
-        env:
-          VITE_BASE_PATH: /wablind/
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      # The catalog demonstration does not use an API, credentials or user data.
       - uses: actions/upload-artifact@v4
         if: always()
         with:

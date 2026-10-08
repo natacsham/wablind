@@ -1,0 +1,323 @@
+.document-paper {
+  max-width: 820px;
+  margin: 0 auto;
+  background: white;
+  padding: clamp(1rem, 3.5vw, 2.5rem);
+  border: 1px solid #d6dfd7;
+  border-radius: 6px;
+}
+/* Fictional websites keep their own visual hierarchy inside the inspector. */
+.document-paper.site-page {
+  --site-ink: #203f44;
+  --site-accent: #235f57;
+  max-width: 1120px;
+  padding: 0;
+  border-radius: 3px;
+  overflow: visible;
+  container-type: inline-size;
+}
+.theme-data.site-page {
+  --site-ink: #233e53;
+  --site-accent: #285c81;
+}
+.theme-community.site-page {
+  --site-ink: #5a3b30;
+  --site-accent: #7a4a36;
+}
+.page-masthead {
+  padding: 1.4rem 2rem 0.5rem;
+  border-top: 5px solid var(--site-accent);
+  border-bottom: 1px solid #ced6cf;
+}
+.page-masthead .document-element {
+  margin: 0.3rem 0;
+}
+.element-brand p {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.5rem, 4cqi, 2.3rem);
+  font-weight: 700;
+  letter-spacing: -0.055em;
+  color: var(--site-ink);
+  margin: 0;
+}
+.element-metadata p {
+  color: #53605b;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  margin: 0.4rem 0;
+}
+.page-masthead .page-menu {
+  margin-top: 1rem;
+  border-top: 1px solid #e0e4df;
+}
+.site-page .page-menu ul {
+  padding: 0;
+}
+.site-page .page-menu a {
+  font-size: 0.9rem;
+  color: var(--site-accent);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+.site-page .page-menu a:hover {
+  border-color: currentColor;
+}
+.site-banner {
+  padding: 1.1rem 2rem 0;
+}
+.site-banner:empty {
+  display: none;
+}
+.site-banner .document-element {
+  margin: 0;
+}
+.page-ad {
+  background: #f3efe6;
+  color: #283f37;
+  border: 1px solid #ddd6c7;
+}
+.page-ad > p {
+  padding: 1rem;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.ad-label {
+  display: block;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 500;
+  color: #5c6055;
+  background: #f7f5ef;
+}
+.site-banner .page-ad {
+  display: grid;
+  grid-template-columns: 35% minmax(0, 1fr);
+  align-items: center;
+}
+.site-banner .ad-label {
+  grid-column: 1/-1;
+}
+.site-banner .page-ad > svg {
+  height: 105px;
+  width: 100%;
+  object-fit: cover;
+  background: #263f44;
+}
+.site-banner .page-ad > p {
+  font-size: clamp(1rem, 2cqi, 1.25rem);
+  padding: 1rem 1.5rem;
+}
+.site-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.34fr);
+  gap: 2rem;
+  padding: 1.5rem 2rem 2rem;
+  align-items: start;
+}
+.site-columns.without-sidebar {
+  grid-template-columns: minmax(0, 1fr);
+}
+.site-article,
+.site-sidebar {
+  min-width: 0;
+}
+.site-article h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 4cqi, 2.7rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--site-ink);
+  line-height: 1.1;
+}
+.site-article > .document-element:first-child {
+  margin-top: 0;
+}
+.site-article > .element-metadata {
+  margin: 0.6rem 0;
+}
+.site-article h2 {
+  font-size: 1.35rem;
+  margin: 0;
+}
+.site-sidebar {
+  border-left: 1px solid #d6dfd7;
+  padding-left: 1.3rem;
+}
+.site-sidebar > .document-element:first-child {
+  margin-top: 0;
+}
+.site-sidebar h2 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--site-accent);
+  padding-bottom: 0.6rem;
+}
+.site-sidebar figcaption {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--site-ink);
+}
+.site-sidebar .page-menu ul {
+  display: block;
+}
+.site-sidebar .page-menu a {
+  padding: 0.35rem 0;
+}
+.site-sidebar .page-notice {
+  font-size: 0.85rem;
+}
+.page-site-footer {
+  padding: 1rem 2rem;
+  border-top: 1px solid #d6dfd7;
+  background: #f6f7f3;
+}
+.page-site-footer .document-element {
+  margin: 0.5rem 0;
+}
+.site-page > .main-jump {
+  margin: 0.6rem 2rem 0;
+}
+@container (max-width:650px) {
+  .site-columns {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1.4rem;
+  }
+  .site-sidebar {
+    border-left: 0;
+    border-top: 1px solid #d6dfd7;
+    padding: 1.2rem 0 0;
+  }
+  .site-sidebar .page-illustration {
+    max-height: 210px;
+  }
+  .page-masthead,
+  .page-site-footer {
+    padding-inline: 1.4rem;
+  }
+  .site-banner {
+    padding-inline: 1.4rem;
+  }
+  .site-banner .page-ad {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .site-banner .page-ad > svg {
+    height: 95px;
+  }
+  .site-banner .page-ad > p {
+    padding: 0.8rem;
+  }
+  .element-brand p {
+    font-size: 1.6rem;
+  }
+}
+@media (forced-colors: active) {
+  .site-page .page-ad,
+  .page-masthead {
+    border-color: CanvasText;
+  }
+}
+.document-element {
+  margin: 1.7rem 0;
+  scroll-margin-block: 2rem;
+}
+.page-menu ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.2rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.page-menu a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.main-jump {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.document-element[role="region"]:focus {
+  outline: 3px solid #934117;
+  outline-offset: 6px;
+}
+.document-paper p,
+.document-paper li {
+  line-height: 1.75;
+}
+.document-paper figure {
+  margin: 0;
+}
+.page-illustration {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.document-paper figcaption {
+  font-size: 0.9rem;
+  color: #52665d;
+  margin-top: 0.5rem;
+}
+.element-tag {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #205849;
+  border-bottom: 1px solid #d6dfd7;
+  padding-bottom: 0.4rem;
+}
+.element-description {
+  padding: 0.3rem 0 0.3rem 1rem;
+  margin-top: 1.2rem;
+  border-left: 3px solid #597650;
+}
+.element-description p {
+  margin: 0.3rem 0;
+}
+.description-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #3e574b;
+}
+.list-label {
+  font-weight: 650;
+}
+.document-paper ul {
+  padding-left: 1.5rem;
+}
+.table-wrap table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 1rem;
+}
+.table-wrap th,
+.table-wrap td {
+  border: 1px solid #819488;
+  padding: 0.7rem;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.table-wrap thead {
+  background: #edf2e9;
+}
+.table-wrap caption {
+  text-align: left;
+  font-weight: 650;
+  margin-bottom: 0.6rem;
+}
+.document-paper .page-notice {
+  padding: 1rem;
+  background: #f4f1e7;
+}
+.document-credit {
+  font-size: 0.8rem;
+  color: #52665d;
+  border-top: 1px solid #d6dfd7;
+  margin-top: 2rem;
+  padding-top: 1rem;
+}

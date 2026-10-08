@@ -1,50 +1,98 @@
-# WABlind em evolução
+# WABlind
 
-Edição mediada de conteúdo web: o professor examina elementos, define sua função na atividade, prepara descrições, síntese autoral e representações relacionadas; quem lê encontra fonte e contribuições identificadas.
+Preparação de páginas web com mediação humana, no contexto da pesquisa de doutorado sobre o **Arcabouço Multimodal para Acessibilidade Digital**.
 
-**Versão 2.1.0-beta.1.** A demonstração funciona sem conta ou serviço. Captura de URLs, conta e publicação na internet exigem configuração e aceitação hospedada. O nome definitivo da evolução permanece em decisão. Não há declaração de conformidade WCAG nem nova avaliação com participantes nesta entrega.
+## Propósito
 
-- Destino previsto: [GitHub Pages da WABlind](https://natacsham.github.io/wablind/). O endereço não confirma que esta versão já foi implantada.
-- Artigo: [Avaliação da Comunicabilidade da WABlind em Enciclopédias On-line](https://doi.org/10.5753/cbie.sbie.2018.1153), SBIE 2018.
-- [Matriz histórica](docs/MATRIZ-HISTORICA.md), [requisitos](docs/REQUISITOS.md), [arquitetura/API](docs/ARQUITETURA.md), [revisão crítica](docs/REVIEW-ARQUITETURA.md), [deploy](docs/DEPLOY.md) e [validação](docs/VALIDACAO.md).
+A WABlind parte de uma tarefa concreta: tornar o conteúdo de uma página mais compreensível e navegável para quem irá utilizá-lo. O professor examina seus elementos, identifica funções, descreve informações visuais e ajusta o que será apresentado ao leitor.
 
-## Experiência implementada
+Essa participação importa porque a existência de texto, imagem ou tabela não assegura, por si só, acesso ao conteúdo. É preciso verificar o que cada representação comunica, quais relações precisam ser preservadas e como a pessoa poderá localizar, comparar e retomar as informações.
 
-A entrada pública é uma busca simples, com foco no campo, sugestões de recursos existentes e voz como alternativa quando suportada. A busca não baixa sites novos. Na área conectada, o professor informa uma URL e o serviço prepara a captura automaticamente. JSON é cópia de segurança opcional, não requisito para começar.
+Na trajetória do doutorado, a WABlind contribui para o estudo da preparação mediada de recursos digitais. O **arcabouço** organiza o raciocínio sobre acessibilidade multimodal; a **MADO** representa semanticamente conhecimentos e relações; o **AgMADO** é seu instrumento computacional. A WABlind mantém seu propósito próprio: editar e disponibilizar conteúdo preparado. Esta reconstrução não implementa integração automática com a MADO ou com o AgMADO e não modifica os resultados já documentados na tese.
 
-O editor reúne lista de elementos, prévia isolada da fonte e marcação explícita. Selecionar não significa marcar ou salvar. O formato 2 registra tarefa, objetivo, fonte, condição de uso, decisões justificadas, síntese ligada a elementos e representações textuais/tabulares complementares, alternativas ou sequenciais. Desconsiderar preserva a captura privada e registra o motivo. Leitor, índice, exportação e fala compartilham a projeção da mediação.
+## Funcionamento pretendido
 
-Há três exemplos próprios editáveis localmente, revisões, desfazer, recuperação de formulários e exportação HTML/JSON. Preparar leitura local não a publica na internet. A versão conectada mantém rascunho e publicação separados, com revisão pública fixa, retirada e conflito de gravação explícito. Uma URL pode possuir várias atividades.
+### Para quem acessa
 
-A prévia preserva apenas HTML e estilos suportados; scripts, formulários ativos, CSS externo e conteúdo incorporado não são reproduzidos. Não é cópia visual fiel de qualquer site. A lista equivalente permanece disponível. A síntese é escrita pelo mediador; não há IA generativa ou resumo automático.
+A página inicial apresenta um campo simples de busca por nome ou endereço. As sugestões vêm das páginas cadastradas na base. Ao selecionar um resultado, a pessoa abre a versão preparada pelo professor.
 
-## O que são Supabase e Render?
+### Para quem prepara
 
-**Supabase** guarda projetos/revisões no PostgreSQL, capturas/prévias em Storage privado e verifica a conta com Auth. **Render** executa a API Node que recebe a URL, faz captura limitada e coordena operações. **GitHub Pages** serve somente a interface estática.
+Na área de gestão, sem login nesta demonstração, o professor abre a própria página. O editor funciona como um inspetor visual: passar o mouse destaca o elemento; clicar abre suas opções. Não há uma ficha permanente nem uma sequência de formulários para percorrer. O fluxo é **abrir → selecionar e marcar → salvar**. Pode:
 
-O login inicial é `professor`, associado no servidor a uma conta Supabase existente por `PROFESSOR_EMAIL`. A senha é definida pela administradora, não vem no código. O formulário não usa OTP, senha fixa `123`, login simulado ou SSO. Acesso individual de vários professores é evolução pendente, embora o banco já tenha membros e políticas de isolamento.
+- classificar um trecho como texto, título de seção, aviso ou propaganda e identificar menus;
+- identificar e descrever imagens;
+- marcar informação importante, instrução, conteúdo complementar e itens a revisar;
+- indicar um único elemento como conteúdo principal, criando um acesso direto na leitura;
+- ajustar textos e legendas;
+- excluir elementos da leitura, desfazer a última alteração e restaurar os excluídos;
+- conferir a prévia e salvar a versão que será consultada pelos visitantes.
 
-## Executar localmente
+O sistema conserva o conteúdo de origem e as alterações separadamente. **Não há opção de baixar HTML ou JSON para o professor ou para o leitor.** A preparação, o armazenamento e a apresentação pertencem ao funcionamento interno da ferramenta.
 
-Requer Node.js 24 e pnpm 11.19.0. Dentro deste repositório:
+A seleção também funciona por Tab e Enter ou pelo seletor de elementos. Escape fecha as opções e devolve o foco ao elemento. A marcação de conteúdo principal não substitui o restante da página: oferece um destino direto sem eliminar o contexto. Tipos de conteúdo preservam sua estrutura; por exemplo, uma imagem não se transforma em uma tabela apenas porque seu rótulo mudou.
+
+## Estado desta implementação
+
+A interface e os testes do fluxo estão implementados em uma **prévia local**. Ela inclui três páginas fictícias próprias:
+
+- O caminho da água;
+- Água em números;
+- Biblioteca do bairro.
+
+As três páginas usam layouts de portais fictícios, com identidade própria, cabeçalho, menu, título editável, banners publicitários, ilustrações, coluna lateral e rodapé. Esses elementos participam da mesma inspeção: anúncios não são apenas decoração da ferramenta. Alterar e salvar o título atualiza também sua identificação na busca e na aba de leitura.
+
+Os endereços `.example` identificam essas páginas dentro do catálogo. A aplicação não captura sites de terceiros nem depende de permissões de redistribuição de conteúdo externo.
+
+A confirmação atualmente grava a leitura neste navegador. **Ainda falta conectar o armazenamento online para que outro visitante veja as alterações.** Essa prévia não é apresentada como o catálogo compartilhado concluído.
+
+O [plano de conexão online](docs/ARMAZENAMENTO-COMPARTILHADO.md) propõe GitHub Pages para a interface e um projeto gratuito Supabase para os dados. A edição será aberta somente para as páginas fictícias, conforme o recorte da demonstração. Nenhum serviço foi contratado ou provisionado.
+
+## Executar a prévia
+
+Requisitos: Node.js 24 e pnpm 11.25.0.
 
 ```sh
-corepack enable
 pnpm install --frozen-lockfile
+pnpm fixtures
 pnpm dev
 ```
 
-Abrir o endereço informado pelo Vite, com `/wablind/`. Sem variáveis de serviço, os exemplos continuam editáveis e a interface informa que a área conectada não está configurada. Não é preciso instalar Supabase ou Render no computador para usar essa demonstração.
-
-Para API local, configurar `.env` a partir de `.env.example` e executar em outro terminal:
+Abra o endereço mostrado pelo Vite com o caminho `/wablind/`. Para testar a compilação de produção:
 
 ```sh
-pnpm dev:api
+pnpm build
+pnpm preview
 ```
 
-Credenciais reais e `PROFESSOR_EMAIL` ficam no servidor. `VITE_API_URL`, `VITE_SUPABASE_URL` e `VITE_SUPABASE_PUBLISHABLE_KEY` são configuração pública. Alterações exigem reiniciar o desenvolvimento ou recompilar. Ajustar `ALLOWED_ORIGINS` à origem real; nunca usar chave administrativa com prefixo `VITE_`.
+A prévia não requer `.env`, login ou senha. O armazenamento local é provisório, não substitui o serviço compartilhado.
 
-## Build e verificação
+## Organização
+
+```text
+src/main.tsx               entrada da interface atual
+src/catalog/
+  data.ts                  páginas e elementos fictícios
+  fixtures.ts              composição dos três sites demonstrativos
+  EditorialArtwork.tsx     ilustrações vetoriais próprias, sem serviços externos
+  model.ts                 tipos, validação, pesquisa e estado
+  App.tsx                  navegação e coordenação da interface
+  Search.tsx               sugestões do catálogo
+  Editor.tsx               inspetor visual, marcações, exclusão e salvamento
+  inspector.css            destaque e controles contextuais da inspeção
+  PageContent.tsx          apresentação semântica dos elementos
+  export.tsx               geração interna das páginas de origem
+scripts/build-demo-pages.tsx
+public/demos/              HTML de origem gerado dos mesmos dados
+tests/catalog.test.ts      regras e preservação do conteúdo
+tests/e2e/catalog.spec.ts  testes do fluxo no navegador
+```
+
+Textos editados são tratados como texto, não como HTML executável. Os tipos de elemento delimitam transformações compatíveis. Imagens, listas e tabelas preservam sua estrutura: o rótulo não converte uma imagem em dados de tabela nem inventa conteúdo.
+
+Os módulos anteriores em `server/`, `supabase/`, `shared/` e no restante de `src/` permanecem preservados. Não são importados pelo ponto de entrada da prévia. A API anterior depende de autenticação e não atende, sem adaptação, ao novo recorte de edição aberta.
+
+## Verificação
 
 ```sh
 pnpm typecheck
@@ -52,31 +100,20 @@ pnpm test
 pnpm build
 pnpm exec playwright install chromium
 pnpm test:e2e
-pnpm preview --port 4173
+pnpm check:privacy
+node scripts/check-release.mjs
 ```
 
-O preview usa o build acabado de gerar em `http://127.0.0.1:4173/wablind/`; não reutilizar `dist` antigo. Para API compilada, executar `pnpm start` com o ambiente configurado. Não é necessário servidor Python para servir a aplicação Vite.
+A suíte atual de navegador é `tests/e2e/catalog.spec.ts`. Os testes de interfaces anteriores permanecem preservados, mas não compõem esse gate.
 
-Os testes de navegador usam build de produção na porta 4174. Os testes de banco usam PGlite em memória, com papéis/identidade simulados: não demonstram conexão ou políticas aplicadas no Supabase real. [VALIDACAO.md](docs/VALIDACAO.md) registra cobertura, evidências e pendências; esta documentação não antecipa sua contagem final.
+Há testes de busca por teclado, foco, edição, classificação semântica, retirada reversível, separação entre rascunho e leitura e falhas de armazenamento. Os testes de segurança verificam estrutura de dados e escape de texto. As verificações com axe e reflow cobrem os percursos principais.
 
-## Dados, segurança e limites
+A leitura manual com NVDA e a avaliação com pessoas com deficiência permanecem pendentes. Não há declaração de conformidade integral com WCAG, eficácia educacional ou validação humana desta reconstrução. Veja [o registro de verificação](docs/VALIDACAO-CATALOGO.md).
 
-Formato 1 permanece legível; a edição prepara formato 2 sem modificar fonte/blocos ou inventar funções históricas. Aplicar `202609060001_wablind.sql` e `202609070002_mediation.sql`, nessa ordem, conforme o estado do banco. Novas revisões não substituem imediatamente a publicação.
+## Relação com o sistema histórico
 
-Rascunhos usam `localStorage`; sessão e textos ainda não aplicados usam `sessionStorage`. Limites ou limpeza do navegador podem remover trabalho local. Exporte cópias externas. JSON preserva o documento, não todo o histórico ou credenciais.
+Este código reconstrói o fluxo descrito pela autora, preservando o propósito de classificação e preparação de páginas. Não é uma execução do código histórico.
 
-Captura externa aceita uma página HTTPS por vez, de host habilitado, com limites de tamanho, tempo e recursos. A API não é proxy aberto, não captura páginas autenticadas e não executa scripts da fonte. O material próprio [comparacao.html](public/examples/comparacao.html) foi preparado para captura autorizada; habilitar seu host exige conferir publicação e alcance da permissão. Não estender essa autorização a páginas de terceiros.
+A [matriz histórica](docs/MATRIZ-HISTORICA.md) separa requisitos documentados de extensões posteriores. A [publicação sobre comunicabilidade da WABlind](https://doi.org/10.5753/cbie.sbie.2018.1153) documenta o estudo anterior. Seus resultados não são transferidos automaticamente para esta interface.
 
-Desconsiderar não apaga o original privado. A resposta de publicação contém a projeção pública, sem o corpo original omitido, mantendo ordem, motivos e contribuições explicitamente publicadas. Revise também a síntese e as representações, que podem mencionar elementos omitidos. Essa projeção pública não pode ser reimportada como captura completa; use a cópia privada para continuar editando. Não incluir dados pessoais de estudantes ou material sem condições de disponibilização. Regras automáticas não substituem revisão humana.
-
-## Publicação
-
-O procedimento está em [DEPLOY.md](docs/DEPLOY.md): Supabase dedicado, duas migrações, conta inicial, Web Service Node 24 no Render e artefato estático no Pages. Não foram contratados planos ou criadas contas por esta documentação. URLs/chaves, `/health`, login, captura, salvamento, leitura pública, backup e testes remotos dependem de configuração e verificação explícitas.
-
-## Contribuir e preservar procedência
-
-Usar branch e pull request com comportamento esperado, mudanças, testes e limites. Para barreiras de acesso, indicar fluxo, navegador e tecnologia assistiva. Não incluir credenciais, conteúdo privado ou dados de terceiros em issues; combinar canal privado com a mantenedora para problemas sensíveis.
-
-O projeto original está associado a Natacsha Raposo, Thais Castro e Alberto Castro, conforme o artigo. A reconstrução não redistribui árvores históricas, PDFs, tese, cópia do Instrumento MADO ou evidências acadêmicas. Esses materiais ficam fora do repositório público e do build.
-
-A licença de redistribuição do código permanece a definir pela titularidade; não se presume autorização de relicenciamento do legado. Dependências mantêm suas licenças. Os exemplos são demonstrativos e não constituem dados de pesquisa ou resultados de avaliação.
+Autoria: **Natacsha Melo**. Projeto de pesquisa. O nome WABlind permanece por continuidade histórica. Não foi adicionada licença permissiva ao código legado; dependências mantêm suas próprias licenças.

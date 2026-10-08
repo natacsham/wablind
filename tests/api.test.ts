@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../server/app';
-const config = { supabaseUrl: '', publicKey: '', serviceKey: '', origins: ['https://natacsham.github.io'], hosts: [] };
+const config = { supabaseUrl: '', publicKey: '', serviceKey: '', origins: ['https://SEU-USUARIO.github.io'], hosts: [] };
 const configured = { ...config, supabaseUrl: 'https://example.supabase.co', publicKey: 'public-placeholder', serviceKey: 'server-placeholder', professorEmail: 'teacher@example.test' };
 afterEach(() => vi.restoreAllMocks());
 describe('API boundary', () => {
