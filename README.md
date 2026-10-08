@@ -2,6 +2,10 @@
 
 Preparação de páginas web com mediação humana, no contexto da pesquisa de doutorado sobre o **Arcabouço Multimodal para Acessibilidade Digital**.
 
+[Abrir a demonstração](https://natacsham.github.io/wablind/) · [Área de gestão das páginas](https://natacsham.github.io/wablind/#/gestao)
+
+A demonstração é pública; as alterações salvas permanecem no navegador de quem edita. O catálogo compartilhado ainda depende da conexão de armazenamento descrita abaixo.
+
 ## Propósito
 
 A WABlind parte de uma tarefa concreta: tornar o conteúdo de uma página mais compreensível e navegável para quem irá utilizá-lo. O professor examina seus elementos, identifica funções, descreve informações visuais e ajusta o que será apresentado ao leitor.
@@ -34,7 +38,7 @@ A seleção também funciona por Tab e Enter ou pelo seletor de elementos. Escap
 
 ## Estado desta implementação
 
-A interface e os testes do fluxo estão implementados em uma **prévia local**. Ela inclui três páginas fictícias próprias:
+A interface é uma **demonstração estática com salvamento local**, preparada para GitHub Pages e execução no computador. Ela inclui três páginas fictícias próprias:
 
 - O caminho da água;
 - Água em números;

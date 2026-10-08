@@ -2,6 +2,8 @@
 
 A interface pode ser hospedada no GitHub Pages. O compartilhamento das alterações entre visitantes exige armazenamento online adicional e ainda não está configurado.
 
+Endereço da demonstração: [WABlind no GitHub Pages](https://natacsham.github.io/wablind/). Os [processamentos de publicação](https://github.com/natacsham/wablind/actions) registram a revisão verificada e disponibilizada.
+
 Consulte o [plano de conexão](ARMAZENAMENTO-COMPARTILHADO.md). Não tratar o armazenamento local como publicação remota.
 
 O workflow atual verifica tipos, testes, privacidade, dependências, compilação e navegador. Quando executado em `main`, publica `dist/`. Uma branch de implementação não substitui automaticamente o site público.
