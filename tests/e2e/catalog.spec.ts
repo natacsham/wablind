@@ -190,7 +190,10 @@ test("editing changes semantics and descriptions, publishes locally and survives
     .fill("Rio, vapor e chuva conectados por setas.");
   await page.getByRole("button", { name: "Salvar" }).click();
   await page.getByRole("link", { name: "Buscar páginas", exact: true }).click();
-  await page.getByRole("combobox").fill("caminho");
+  // Wait for the search control, not either select still unmounting in the editor.
+  await page
+    .getByRole("combobox", { name: "Nome ou endereço da página" })
+    .fill("caminho");
   await page.getByRole("button", { name: "Buscar", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Percurso observado" }),

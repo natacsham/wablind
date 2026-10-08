@@ -173,7 +173,8 @@ test("Escape, manual typing and leaving search release the microphone and ignore
   await page
     .getByRole("link", { name: "Área do professor", exact: true })
     .click();
-  expect(await page.evaluate(() => window.voiceTest.aborts)).toBe(3);
+  // Hash navigation and the recognition cleanup run after the click event.
+  await expect.poll(() => page.evaluate(() => window.voiceTest.aborts)).toBe(3);
 });
 
 test("a recognition attempt has a time limit and handles a missing end event", async ({
